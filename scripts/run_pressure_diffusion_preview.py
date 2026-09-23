@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-LAMMPS_INPUT = PROJECT_ROOT / "lammps" / "in.lj_diffusion_pressure"
+LAMMPS_INPUT = PROJECT_ROOT / "lammps" / "in.lj_diffusion_pressure_reflective_preview"
 DEFAULT_LMP = PROJECT_ROOT / ".venv" / "Scripts" / "lmp.exe"
 RESULTS_ROOT = PROJECT_ROOT / "results" / "diffusion_pressure_preview"
 PRESSURES = (0.10, 0.20, 0.30, 0.40, 0.50)
@@ -36,7 +36,11 @@ def main() -> int:
     manifest = {
         "temperature": TEMPERATURE,
         "pressures": list(PRESSURES),
-        "protocol": "NPT equilibration followed by a short fixed-volume NVT preview",
+        "protocol": (
+            "Periodic NPT equilibration followed by a short fixed-volume NVT "
+            "preview with six reflecting walls"
+        ),
+        "production_boundary": "reflecting walls on all six faces",
         "timestep_size": TIMESTEP_SIZE,
         "production_steps": PRODUCTION_STEPS,
         "duration_lj": PRODUCTION_STEPS * TIMESTEP_SIZE,

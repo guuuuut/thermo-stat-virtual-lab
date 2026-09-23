@@ -205,7 +205,7 @@
           </select>
         </div>
         <div>
-          <label for="particle-size">粒子大小 <span id="particle-size-value">0.46</span></label>
+          <label for="particle-size">粒子相对大小 <span id="particle-size-value">0.46</span></label>
           <input id="particle-size" type="range" min="0.22" max="0.75" step="0.01" value="0.46">
         </div>
       </div>
@@ -214,7 +214,7 @@
         <div class="stage">
           <div id="three-stage" role="img" aria-label="不同压强下两类示踪粒子的三维扩散动画"></div>
           <div class="stage-overlay">
-            <div>拖动改变视角 · 滚轮缩放 · 周期边界</div>
+            <div>拖动改变视角 · 滚轮缩放 · 六面反射墙</div>
             <div class="legend">
               <span><i class="swatch a"></i>A：初始左半箱</span>
               <span><i class="swatch b"></i>B：初始右半箱</span>
@@ -321,6 +321,7 @@
       scene.add(particles);
 
       let boxLines = null;
+      let wallShell = null;
       let virtualWall = null;
       let active = cases[0];
       let bounds = active.frames[0].bounds;
@@ -355,6 +356,11 @@
           virtualWall.geometry.dispose();
           virtualWall.material.dispose();
         }
+        if (wallShell) {
+          scene.remove(wallShell);
+          wallShell.geometry.dispose();
+          wallShell.material.dispose();
+        }
         const lengths = bounds.map(axis => axis[1] - axis[0]);
         center = bounds.map(axis => (axis[0] + axis[1]) / 2);
         boxLines = new THREE.LineSegments(
@@ -362,6 +368,17 @@
           new THREE.LineBasicMaterial({ color: 0x7e9daf, transparent: true, opacity: 0.68 })
         );
         scene.add(boxLines);
+        wallShell = new THREE.Mesh(
+          new THREE.BoxGeometry(lengths[0], lengths[1], lengths[2]),
+          new THREE.MeshBasicMaterial({
+            color: 0x8db4c8,
+            transparent: true,
+            opacity: 0.035,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          })
+        );
+        scene.add(wallShell);
         virtualWall = new THREE.Mesh(
           new THREE.PlaneGeometry(lengths[2], lengths[1]),
           new THREE.MeshBasicMaterial({
@@ -375,21 +392,15 @@
         virtualWall.rotation.y = Math.PI / 2;
         scene.add(virtualWall);
         const distance = Math.max(...lengths) * 1.55;
+        updateParticleSize(lengths);
         camera.position.set(distance * 0.86, distance * 0.68, distance * 0.92);
         controls.target.set(0, 0, 0);
         controls.update();
       }
 
-      function wrap(value, low, length) {
-        return ((value - low) % length + length) % length + low;
-      }
-
-      function periodicMix(a, b, ratio, low, high) {
-        const length = high - low;
-        let delta = b - a;
-        if (delta > length / 2) delta -= length;
-        if (delta < -length / 2) delta += length;
-        return wrap(a + delta * ratio, low, length);
+      function updateParticleSize(lengths = bounds.map(axis => axis[1] - axis[0])) {
+        const boxScale = Math.max(...lengths);
+        particleMaterial.size = Number(particleSize.value) * boxScale / 20;
       }
 
       function framePair(timePs) {
@@ -413,12 +424,9 @@
         for (let index = 0; index < frameA.atoms.length; index += 1) {
           const atomA = frameA.atoms[index];
           const atomB = frameB.atoms[index];
-          positions[index * 3] =
-            periodicMix(atomA[1], atomB[1], ratio, bounds[0][0], bounds[0][1]) - center[0];
-          positions[index * 3 + 1] =
-            periodicMix(atomA[2], atomB[2], ratio, bounds[1][0], bounds[1][1]) - center[1];
-          positions[index * 3 + 2] =
-            periodicMix(atomA[3], atomB[3], ratio, bounds[2][0], bounds[2][1]) - center[2];
+          positions[index * 3] = THREE.MathUtils.lerp(atomA[1], atomB[1], ratio) - center[0];
+          positions[index * 3 + 1] = THREE.MathUtils.lerp(atomA[2], atomB[2], ratio) - center[1];
+          positions[index * 3 + 2] = THREE.MathUtils.lerp(atomA[3], atomB[3], ratio) - center[2];
         }
         particleGeometry.attributes.position.needsUpdate = true;
         const timeLj = frameA.time_lj + (frameB.time_lj - frameA.time_lj) * ratio;
@@ -476,7 +484,7 @@
       });
       pressureSelect.addEventListener("change", () => selectCase(pressureSelect.value));
       particleSize.addEventListener("input", () => {
-        particleMaterial.size = Number(particleSize.value);
+        updateParticleSize();
         particleSizeValue.textContent = Number(particleSize.value).toFixed(2);
       });
       timeSlider.addEventListener("input", () => {

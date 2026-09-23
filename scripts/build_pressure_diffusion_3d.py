@@ -117,7 +117,7 @@ def main() -> None:
         "temperature_lj": summary["temperature_lj"],
         "timestep_size": TIMESTEP_SIZE,
         "time_unit_ps": time_unit_ps,
-        "boundary": "periodic",
+        "boundary": "reflective",
         "particle_count": len(cases[0]["frames"][0]["atoms"]),
         "inverse_pressure_fit": summary["inverse_pressure_fit"],
         "power_law_fit": summary["power_law_fit"],

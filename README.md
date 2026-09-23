@@ -35,7 +35,7 @@
     .\.venv\Scripts\python.exe scripts\run_pressure_diffusion_preview.py
     .\.venv\Scripts\python.exe scripts\build_pressure_diffusion_3d.py
 
-分析使用 NPT 平衡后的固定体积 NVT 轨迹来计算 MSD；预览轨迹用于 0–100 个约化时间单位的动画。仓库包含预览轨迹和复算扩散系数所需的 CSV，完整长轨迹与运行日志可按上述命令重新生成。
+分析轨迹使用周期边界，在 NPT 平衡后的固定体积 NVT 阶段计算 MSD。预览轨迹在相同的 NPT 平衡后切换为六面反射墙，用于 0–100 个约化时间单位的动画。这样既能展示真实反弹，又避免有限反射盒使长时间 MSD 饱和而破坏扩散拟合。仓库包含预览轨迹和复算扩散系数所需的 CSV，完整长轨迹与运行日志可按上述命令重新生成。
 
 ## 目录
 

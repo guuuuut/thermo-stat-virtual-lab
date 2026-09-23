@@ -1,0 +1,83 @@
+# Isothermal pressure-series preview with reflecting production walls.
+# Stage 1: equilibrate the density at target pressure under periodic NPT.
+# Stage 2: freeze that volume, switch to fixed non-periodic boundaries, and
+#          run a short NVT trajectory with six ideal reflecting walls.
+
+clear
+units           lj
+dimension       3
+boundary        p p p
+atom_style      atomic
+
+variable        temperature index 2.0
+variable        target_pressure index 0.1
+variable        initial_density index 0.05
+variable        cells index 5
+variable        seed index 20260922
+variable        equil_steps index 30000
+variable        prod_steps index 20000
+variable        sample_interval index 100
+variable        dump_interval index 250
+
+lattice         fcc ${initial_density}
+region          box block 0 ${cells} 0 ${cells} 0 ${cells} units lattice
+create_box      2 box
+create_atoms    1 box
+mass            1 1.0
+mass            2 1.0
+
+pair_style      lj/cut 2.5
+pair_coeff      1 1 1.0 1.0 2.5
+pair_coeff      1 2 1.0 1.0 2.5
+pair_coeff      2 2 1.0 1.0 2.5
+pair_modify     shift yes
+neighbor        0.3 bin
+neigh_modify    delay 0 every 1 check yes
+
+timestep        0.005
+velocity        all create ${temperature} ${seed} mom yes rot no dist gaussian
+
+thermo          1000
+thermo_style    custom step atoms temp press density vol pe ke etotal
+thermo_modify   flush yes
+
+# NPT requires periodic dimensions. Use it only to determine the box volume.
+fix             equilibration all npt temp ${temperature} ${temperature} 0.5 iso ${target_pressure} ${target_pressure} 5.0 drag 1.0
+run             ${equil_steps}
+run             0
+unfix           equilibration
+velocity        all scale ${temperature}
+
+# Assign physically identical tracer labels from the equilibrated positions.
+variable        midpoint equal 0.5*(xlo+xhi)
+variable        split equal ${midpoint}
+region          left block INF ${split} INF INF INF INF units box
+region          right block ${split} INF INF INF INF INF units box
+set             region left type 1
+set             region right type 2
+
+# Reflecting walls require fixed, non-periodic box faces.
+set             group all image 0 0 0
+change_box      all boundary f f f
+fix             walls all wall/reflect xlo EDGE xhi EDGE ylo EDGE yhi EDGE zlo EDGE zhi EDGE units box
+
+reset_timestep  0
+fix             production all nvt temp ${temperature} ${temperature} 1.0
+compute         displacement all msd com yes
+
+variable        sample_step equal step
+variable        sample_time equal time
+variable        sample_temp equal temp
+variable        sample_press equal press
+variable        sample_density equal density
+variable        sample_volume equal vol
+variable        sample_msd equal c_displacement[4]
+
+fix             thermo_output all print ${sample_interval} "${sample_step},${sample_time},${sample_temp},${sample_press},${sample_density},${sample_volume}" file thermo.csv screen no title "step,time,temp,pressure,density,volume"
+fix             msd_output all print ${sample_interval} "${sample_step},${sample_time},${sample_msd}" file msd.csv screen no title "step,time,msd"
+
+dump            trajectory all custom ${dump_interval} trajectory.lammpstrj id type x y z xu yu zu vx vy vz
+dump_modify     trajectory sort id
+
+run             ${prod_steps}
+write_data      final.data pair ij

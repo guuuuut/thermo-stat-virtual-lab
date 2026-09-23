@@ -2,17 +2,22 @@
 
 This archive contains five isothermal pressure cases at target reduced
 pressures P* = 0.10, 0.20, 0.30, 0.40, and 0.50, with T* = 2.0 and 500
-particles. The simulation box uses periodic boundaries in all three axes.
+particles. The preview and analysis datasets intentionally use different
+production boundary conditions, as described below.
 
 ## Folders
 
 - preview/: five trajectories used by the 3D animation. The NVT production
   segment spans 0–100 reduced time units. With timestep 0.005 and a dump
   every 250 steps, each trajectory has 81 frames at 1.25-time-unit intervals.
+  NPT equilibration is periodic; production switches to six fixed reflecting
+  walls after the NPT-equilibrated volume has been frozen.
 - analysis/: five longer NVT trajectories used for diffusion analysis. The
   production segment spans 0–500 reduced time units. With a dump every
   2,500 steps, each trajectory has 41 frames at 12.5-time-unit intervals.
-  Each case includes its corresponding msd.csv and thermo.csv.
+  Each case includes its corresponding msd.csv and thermo.csv. These analysis
+  trajectories retain periodic boundaries so that confinement does not make
+  the long-time MSD plateau and invalidate the diffusion fit.
 - analysis/summary.json and analysis/diffusion_vs_pressure.csv: derived
   diffusion coefficients and pressure-series results.
 
