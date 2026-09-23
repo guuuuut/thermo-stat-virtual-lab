@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>压强与气体扩散</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: light-dark(#eef3f7, #091118);
+      --surface: light-dark(#ffffff, #121d26);
+      --soft: light-dark(#f3f7fa, #192731);
+      --text: light-dark(#17232d, #edf5f8);
+      --muted: light-dark(#60717e, #a8bac5);
+      --border: light-dark(#cbd7df, #344753);
+      --accent: light-dark(#176b8f, #67c8ec);
+      --accent-text: light-dark(#ffffff, #07131b);
+      --a: #2f91e8;
+      --b: #f39a3d;
+
+      --success: light-dark(#16845d, #58d3a4);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--page);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    button, select, input { font: inherit; }
+    button, select {
+      min-height: 38px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 11px;
+    }
+    button { cursor: pointer; }
+    button.primary {
+      min-width: 92px;
+      color: var(--accent-text);
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    select { width: 100%; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .app { width: min(1260px, calc(100% - 24px)); margin: 18px auto; }
+    .shell {
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 18px 48px rgb(0 0 0 / 12%);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .subtitle { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .result {
+      color: var(--success);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: auto 180px 120px minmax(180px, 1fr);
+      gap: 12px;
+      align-items: end;
+      padding: 12px 18px;
+      background: var(--soft);
+      border-bottom: 1px solid var(--border);
+    }
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+    .stage-grid { display: grid; grid-template-columns: minmax(0, 1fr) 310px; }
+    .stage {
+      position: relative;
+      min-width: 0;
+      min-height: 590px;
+      background: #061019;
+      border-right: 1px solid var(--border);
+    }
+    #three-stage { position: absolute; inset: 0; }
+    #three-stage canvas { display: block; width: 100%; height: 100%; }
+    .stage-overlay {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      z-index: 2;
+      pointer-events: none;
+      color: #e8f3f8;
+      text-shadow: 0 1px 3px #000;
+      font-size: 13px;
+    }
+    .legend { display: flex; gap: 14px; margin-top: 7px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 10px; height: 10px; border-radius: 50%; }
+    .swatch.a { background: var(--a); }
+    .swatch.b { background: var(--b); }
+    .error {
+      position: absolute;
+      inset: 20px;
+      z-index: 4;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgb(114 25 25 / 92%);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+    }
+    .side { padding: 15px; }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .metric span { color: var(--muted); }
+    .metric strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .wall-status { margin-top: 8px; color: #a8e8ff; font-size: 12px; }
+    .data-note { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .data-note a { color: var(--accent); }
+    .timeline {
+      display: grid;
+      grid-template-columns: minmax(210px, auto) minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 18px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .time-label { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .time-secondary { color: var(--muted); font-size: 12px; }
+    .frame-label { min-width: 82px; color: var(--muted); text-align: right; font-size: 12px; }
+    @media (max-width: 840px) {
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .stage-grid { grid-template-columns: 1fr; }
+      .stage { min-height: 500px; border-right: 0; border-bottom: 1px solid var(--border); }
+    }
+    @media (max-width: 520px) {
+      .app { width: 100%; margin: 0; }
+      .shell { border-radius: 0; border-left: 0; border-right: 0; }
+      header { align-items: flex-start; flex-direction: column; }
+      .toolbar { grid-template-columns: 1fr; }
+      .stage { min-height: 410px; }
+      .timeline { grid-template-columns: 1fr auto; }
+      .timeline input { grid-column: 1 / -1; grid-row: 2; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="app">
+    <section class="shell" aria-label="压强与三维气体扩散关系">
+      <header>
+        <div>
+          <h1>等温条件下压强与气体扩散</h1>
+          <div class="subtitle">T*=2.0 · 五个压力点 · NPT 平衡后固定体积测量 MSD</div>
+        </div>
+        <div class="result">0–100 t* · 81 个物理轨迹帧</div>
+      </header>
+
+      <div class="toolbar">
+        <button class="primary" id="play-button" type="button">播放</button>
+        <div>
+          <label for="pressure-select">目标压强 P*</label>
+          <select id="pressure-select"></select>
+        </div>
+        <div>
+          <label for="speed-select">播放倍率</label>
+          <select id="speed-select">
+            <option value="0.25">0.25×</option>
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+          </select>
+        </div>
+        <div>
+          <label for="particle-size">粒子大小 <span id="particle-size-value">0.46</span></label>
+          <input id="particle-size" type="range" min="0.22" max="0.75" step="0.01" value="0.46">
+        </div>
+      </div>
+
+      <div class="stage-grid">
+        <div class="stage">
+          <div id="three-stage" role="img" aria-label="不同压强下两类示踪粒子的三维扩散动画"></div>
+          <div class="stage-overlay">
+            <div>拖动改变视角 · 滚轮缩放 · 周期边界</div>
+            <div class="legend">
+              <span><i class="swatch a"></i>A：初始左半箱</span>
+              <span><i class="swatch b"></i>B：初始右半箱</span>
+            </div>
+            <div class="wall-status" id="wall-status">首帧：虚拟隔板示意</div>
+          </div>
+          <div class="error" id="webgl-error" role="alert"></div>
+        </div>
+
+        <aside class="side" aria-live="polite">
+          <div class="metric"><span>实际时间</span><strong id="physical-time-value">0.000 ps</strong></div>
+          <div class="metric"><span>约化时间 t*</span><strong id="reduced-time-value">0.000</strong></div>
+          <div class="metric"><span>平均压强 P*</span><strong id="pressure-value">0.000</strong></div>
+          <div class="metric"><span>平均密度 ρ*</span><strong id="density-value">0.000</strong></div>
+          <div class="metric"><span>平均温度 T*</span><strong id="temperature-value">0.000</strong></div>
+          <div class="metric"><span>混合度 M</span><strong id="mixing-value">0.000</strong></div>
+
+          <div class="data-note">
+            D–P 关系不在动画中预先展示，留作后续分析任务。<br>
+            <a href="../results/diffusion_pressure/diffusion_vs_pressure.csv" download>下载 D–P 分析数据（CSV）</a>
+          </div>
+        </aside>
+      </div>
+
+      <div class="timeline">
+        <div>
+          <div class="time-label" id="timeline-time">t = 0.000 ps</div>
+          <div class="time-secondary">Argon 参数映射</div>
+        </div>
+        <input id="time-slider" type="range" min="0" max="1000" step="1" value="0" aria-label="实际模拟时间轴">
+        <span class="frame-label" id="frame-label">帧 1 / 81</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const PRESSURE_DIFFUSION_DATA = __PRESSURE_DIFFUSION_DATA__;
+  </script>
+  <script type="module">
+    const stage = document.getElementById("three-stage");
+    const errorBox = document.getElementById("webgl-error");
+
+    Promise.all([
+      import("three"),
+      import("three/addons/controls/OrbitControls.js")
+    ]).then(([THREE, controlsModule]) => {
+      const OrbitControls = controlsModule.OrbitControls;
+      const cases = PRESSURE_DIFFUSION_DATA.cases;
+      const pressureSelect = document.getElementById("pressure-select");
+      for (const item of cases) {
+        const option = document.createElement("option");
+        option.value = item.key;
+        option.textContent = "P* = " + item.target_pressure.toFixed(2);
+        pressureSelect.appendChild(option);
+      }
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#061019");
+      const camera = new THREE.PerspectiveCamera(48, 1, 0.05, 200);
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      stage.appendChild(renderer.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+
+      const dotCanvas = document.createElement("canvas");
+      dotCanvas.width = 64;
+      dotCanvas.height = 64;
+      const dotContext = dotCanvas.getContext("2d");
+      const dotGradient = dotContext.createRadialGradient(24, 20, 3, 32, 32, 30);
+      dotGradient.addColorStop(0, "rgba(255,255,255,1)");
+      dotGradient.addColorStop(0.4, "rgba(255,255,255,0.96)");
+      dotGradient.addColorStop(1, "rgba(255,255,255,0)");
+      dotContext.fillStyle = dotGradient;
+      dotContext.fillRect(0, 0, 64, 64);
+
+      const positions = new Float32Array(PRESSURE_DIFFUSION_DATA.particle_count * 3);
+      const colors = new Float32Array(PRESSURE_DIFFUSION_DATA.particle_count * 3);
+      const colorA = new THREE.Color("#2f91e8");
+      const colorB = new THREE.Color("#f39a3d");
+      const particleGeometry = new THREE.BufferGeometry();
+      particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      particleGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      const particleMaterial = new THREE.PointsMaterial({
+        size: 0.46,
+        map: new THREE.CanvasTexture(dotCanvas),
+        transparent: true,
+        alphaTest: 0.08,
+        vertexColors: true,
+        depthWrite: false,
+        sizeAttenuation: true
+      });
+      const particles = new THREE.Points(particleGeometry, particleMaterial);
+      scene.add(particles);
+
+      let boxLines = null;
+      let virtualWall = null;
+      let active = cases[0];
+      let bounds = active.frames[0].bounds;
+      let center = [0, 0, 0];
+      let playing = false;
+      let simulationTimePs = 0;
+      let previousNow = performance.now();
+
+      const playButton = document.getElementById("play-button");
+      const speedSelect = document.getElementById("speed-select");
+      const particleSize = document.getElementById("particle-size");
+      const particleSizeValue = document.getElementById("particle-size-value");
+      const timeSlider = document.getElementById("time-slider");
+      const physicalTimeValue = document.getElementById("physical-time-value");
+      const reducedTimeValue = document.getElementById("reduced-time-value");
+      const pressureValue = document.getElementById("pressure-value");
+      const densityValue = document.getElementById("density-value");
+      const temperatureValue = document.getElementById("temperature-value");
+      const mixingValue = document.getElementById("mixing-value");
+      const wallStatus = document.getElementById("wall-status");
+      const timelineTime = document.getElementById("timeline-time");
+      const frameLabel = document.getElementById("frame-label");
+
+      function rebuildBox() {
+        if (boxLines) {
+          scene.remove(boxLines);
+          boxLines.geometry.dispose();
+          boxLines.material.dispose();
+        }
+        if (virtualWall) {
+          scene.remove(virtualWall);
+          virtualWall.geometry.dispose();
+          virtualWall.material.dispose();
+        }
+        const lengths = bounds.map(axis => axis[1] - axis[0]);
+        center = bounds.map(axis => (axis[0] + axis[1]) / 2);
+        boxLines = new THREE.LineSegments(
+          new THREE.EdgesGeometry(new THREE.BoxGeometry(lengths[0], lengths[1], lengths[2])),
+          new THREE.LineBasicMaterial({ color: 0x7e9daf, transparent: true, opacity: 0.68 })
+        );
+        scene.add(boxLines);
+        virtualWall = new THREE.Mesh(
+          new THREE.PlaneGeometry(lengths[2], lengths[1]),
+          new THREE.MeshBasicMaterial({
+            color: 0x8bdcf5,
+            transparent: true,
+            opacity: 0.24,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          })
+        );
+        virtualWall.rotation.y = Math.PI / 2;
+        scene.add(virtualWall);
+        const distance = Math.max(...lengths) * 1.55;
+        camera.position.set(distance * 0.86, distance * 0.68, distance * 0.92);
+        controls.target.set(0, 0, 0);
+        controls.update();
+      }
+
+      function wrap(value, low, length) {
+        return ((value - low) % length + length) % length + low;
+      }
+
+      function periodicMix(a, b, ratio, low, high) {
+        const length = high - low;
+        let delta = b - a;
+        if (delta > length / 2) delta -= length;
+        if (delta < -length / 2) delta += length;
+        return wrap(a + delta * ratio, low, length);
+      }
+
+      function framePair(timePs) {
+        const frames = active.frames;
+        if (timePs <= frames[0].time_ps) return [0, 0, 0];
+        const last = frames.length - 1;
+        if (timePs >= frames[last].time_ps) return [last, last, 0];
+        const interval = frames[1].time_ps - frames[0].time_ps;
+        const indexA = Math.max(0, Math.min(last - 1, Math.floor(timePs / interval)));
+        const indexB = indexA + 1;
+        const ratio = (timePs - frames[indexA].time_ps) /
+          (frames[indexB].time_ps - frames[indexA].time_ps);
+        return [indexA, indexB, ratio];
+      }
+
+      function updateAtTime(timePs) {
+        const pair = framePair(timePs);
+        const frameA = active.frames[pair[0]];
+        const frameB = active.frames[pair[1]];
+        const ratio = pair[2];
+        for (let index = 0; index < frameA.atoms.length; index += 1) {
+          const atomA = frameA.atoms[index];
+          const atomB = frameB.atoms[index];
+          positions[index * 3] =
+            periodicMix(atomA[1], atomB[1], ratio, bounds[0][0], bounds[0][1]) - center[0];
+          positions[index * 3 + 1] =
+            periodicMix(atomA[2], atomB[2], ratio, bounds[1][0], bounds[1][1]) - center[1];
+          positions[index * 3 + 2] =
+            periodicMix(atomA[3], atomB[3], ratio, bounds[2][0], bounds[2][1]) - center[2];
+        }
+        particleGeometry.attributes.position.needsUpdate = true;
+        const timeLj = frameA.time_lj + (frameB.time_lj - frameA.time_lj) * ratio;
+        const isInitialFrame = pair[0] === 0 && pair[1] === 0;
+        virtualWall.visible = isInitialFrame;
+        wallStatus.style.display = isInitialFrame ? "block" : "none";
+        const mixing = frameA.mixing_index +
+          (frameB.mixing_index - frameA.mixing_index) * ratio;
+        physicalTimeValue.textContent = timePs.toFixed(3) + " ps";
+        reducedTimeValue.textContent = timeLj.toFixed(3);
+        mixingValue.textContent = mixing.toFixed(3);
+        timelineTime.textContent = "t = " + timePs.toFixed(3) + " ps";
+        frameLabel.textContent = "帧 " + (pair[0] + 1) + " / " + active.frames.length;
+        timeSlider.value = timePs;
+      }
+
+      function selectCase(key) {
+        active = cases.find(item => item.key === key) || cases[0];
+        bounds = active.frames[0].bounds;
+        const initialAtoms = active.frames[0].atoms;
+        for (let index = 0; index < initialAtoms.length; index += 1) {
+          const color = initialAtoms[index][0] === 1 ? colorA : colorB;
+          colors[index * 3] = color.r;
+          colors[index * 3 + 1] = color.g;
+          colors[index * 3 + 2] = color.b;
+        }
+        particleGeometry.attributes.color.needsUpdate = true;
+        simulationTimePs = 0;
+        playing = false;
+        playButton.textContent = "播放";
+        timeSlider.min = 0;
+        timeSlider.max = active.frames[active.frames.length - 1].time_ps;
+        timeSlider.step = (active.frames[1].time_ps - active.frames[0].time_ps) / 20;
+        pressureValue.textContent = active.mean_pressure.toFixed(3);
+        densityValue.textContent = active.mean_density.toFixed(3);
+        temperatureValue.textContent = active.mean_temperature.toFixed(3);
+        rebuildBox();
+        updateAtTime(0);
+
+      }
+
+
+      function resize() {
+        const width = Math.max(1, stage.clientWidth);
+        const height = Math.max(1, stage.clientHeight);
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      }
+
+
+      playButton.addEventListener("click", () => {
+        playing = !playing;
+        playButton.textContent = playing ? "暂停" : "播放";
+      });
+      pressureSelect.addEventListener("change", () => selectCase(pressureSelect.value));
+      particleSize.addEventListener("input", () => {
+        particleMaterial.size = Number(particleSize.value);
+        particleSizeValue.textContent = Number(particleSize.value).toFixed(2);
+      });
+      timeSlider.addEventListener("input", () => {
+        playing = false;
+        playButton.textContent = "播放";
+        simulationTimePs = Number(timeSlider.value);
+        updateAtTime(simulationTimePs);
+      });
+      new ResizeObserver(resize).observe(stage);
+
+      function animate(now) {
+        const elapsed = Math.min(0.1, (now - previousNow) / 1000);
+        previousNow = now;
+        if (playing) {
+          const basePlaybackPsPerSecond = 10 * PRESSURE_DIFFUSION_DATA.time_unit_ps;
+          simulationTimePs += elapsed * basePlaybackPsPerSecond * Number(speedSelect.value);
+          const end = active.frames[active.frames.length - 1].time_ps;
+          if (simulationTimePs > end) simulationTimePs = 0;
+          updateAtTime(simulationTimePs);
+        }
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      selectCase(cases[0].key);
+      resize();
+      requestAnimationFrame(animate);
+    }).catch(error => {
+      errorBox.style.display = "flex";
+      errorBox.textContent = "三维组件加载失败：" + error.message;
+    });
+  </script>
+</body>
+</html>

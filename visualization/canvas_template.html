@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LJ 流体 Canvas 轨迹播放器</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: light-dark(#eaf0f5, #0d141b);
+      --surface: light-dark(#ffffff, #17222c);
+      --surface-soft: light-dark(#f3f7fa, #202e39);
+      --text: light-dark(#17212b, #eef5f9);
+      --muted: light-dark(#61707d, #aebbc5);
+      --border: light-dark(#cbd7e0, #3a4b58);
+      --accent: light-dark(#0f6e92, #6bc8eb);
+      --accent-text: light-dark(#ffffff, #0b1720);
+      --energy: light-dark(#7651bd, #c9a7ff);
+      --grid: light-dark(#dce5eb, #2c3d49);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--page);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .app { width: min(1180px, calc(100% - 24px)); margin: 18px auto; }
+    .shell {
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 18px 45px color-mix(in srgb, var(--text) 10%, transparent);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 { margin: 0; font-size: 19px; font-weight: 600; }
+    .subtitle, .muted { color: var(--muted); }
+    .subtitle { margin-top: 3px; font-size: 13px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .badge::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2fb67d;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 150px auto 150px minmax(180px, 1fr);
+      align-items: end;
+      gap: 12px;
+      padding: 12px 18px;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--border);
+    }
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+    button, select, input { font: inherit; }
+    button, select {
+      min-height: 36px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+    }
+    button { cursor: pointer; }
+    button.primary {
+      color: var(--accent-text);
+      background: var(--accent);
+      border-color: var(--accent);
+      min-width: 92px;
+    }
+    select { width: 100%; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .stage-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      gap: 0;
+    }
+    .stage { min-width: 0; padding: 14px; border-right: 1px solid var(--border); }
+    .stage-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 9px;
+    }
+    .stage-title { font-weight: 600; }
+    .stage-note { color: var(--muted); font-size: 12px; }
+    #particle-canvas {
+      display: block;
+      width: 100%;
+      height: 520px;
+      border-radius: 9px;
+      background: light-dark(#101c27, #081119);
+    }
+    .side { padding: 16px; }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .metric:last-of-type { border-bottom: 0; }
+    .metric span { color: var(--muted); }
+    .metric strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .legend { margin-top: 22px; }
+    .legend-title { margin-bottom: 9px; font-size: 13px; color: var(--muted); }
+    .gradient {
+      height: 9px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, hsl(210 82% 58%), hsl(48 90% 58%), hsl(8 82% 57%));
+    }
+    .legend-labels { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .explain {
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 18px 15px;
+      border-top: 1px solid var(--border);
+    }
+    .time-label { min-width: 72px; font-variant-numeric: tabular-nums; }
+    .frame-label { color: var(--muted); min-width: 74px; text-align: right; font-size: 13px; }
+    @media (max-width: 780px) {
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .stage-grid { grid-template-columns: 1fr; }
+      .stage { border-right: 0; border-bottom: 1px solid var(--border); }
+      #particle-canvas { height: 420px; }
+    }
+    @media (max-width: 460px) {
+      .app { width: 100%; margin: 0; }
+      .shell { border-radius: 0; border-left: 0; border-right: 0; }
+      header { align-items: flex-start; flex-direction: column; }
+      .toolbar { grid-template-columns: 1fr; }
+      #particle-canvas { height: 340px; }
+      .timeline { grid-template-columns: 1fr auto; }
+      .timeline input { grid-column: 1 / -1; grid-row: 2; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="shell" aria-label="Lennard-Jones 流体轨迹播放器">
+      <header>
+        <div>
+          <h1>LJ 流体轨迹回放</h1>
+          <div class="subtitle">XY 投影 · 粒子颜色表示速率 · 现有 LAMMPS 结果</div>
+        </div>
+        <div class="badge" id="data-status">轨迹已载入</div>
+      </header>
+
+      <div class="toolbar">
+        <div>
+          <label for="case-select">实验结果</label>
+          <select id="case-select">
+            <option value="nve">NVE 生产段</option>
+            <option value="nvt">NVT 生产段</option>
+          </select>
+        </div>
+        <button class="primary" id="play-button" type="button">播放</button>
+        <div>
+          <label for="speed-select">播放速度</label>
+          <select id="speed-select">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+        </div>
+        <div>
+          <label for="particle-size">粒子显示大小 <span id="particle-size-value">4.0</span></label>
+          <input id="particle-size" type="range" min="2" max="7" step="0.5" value="4">
+        </div>
+      </div>
+
+      <div class="stage-grid">
+        <div class="stage">
+          <div class="stage-head">
+            <span class="stage-title" id="stage-title">NVE · 256 个粒子</span>
+            <span class="stage-note">周期边界下的平滑帧间插值</span>
+          </div>
+          <canvas id="particle-canvas" role="img" aria-label="LAMMPS 粒子轨迹动画"></canvas>
+        </div>
+        <aside class="side" aria-live="polite">
+          <div class="metric"><span>timestep</span><strong id="step-value">0</strong></div>
+          <div class="metric"><span>模拟时间 t*（LJ）</span><strong id="time-value">0.000</strong></div>
+          <div class="metric"><span>温度 T</span><strong id="temp-value">1.200</strong></div>
+          <div class="metric"><span>压力 P</span><strong id="pressure-value">2.161</strong></div>
+          <div class="metric"><span>总能量/粒子</span><strong id="energy-value">-0.01099</strong></div>
+          <div class="metric"><span>平均速率</span><strong id="speed-value">0.000</strong></div>
+
+          <div class="legend">
+            <div class="legend-title">粒子速率</div>
+            <div class="gradient" aria-hidden="true"></div>
+            <div class="legend-labels"><span>慢</span><span>中等</span><span>快</span></div>
+          </div>
+          <div class="explain">这里显示的是三维轨迹在 XY 平面的投影；Z 坐标用于调整粒子大小和透明度，因此只表达空间层次，不等同于真实透视成像。</div>
+        </aside>
+      </div>
+
+      <div class="timeline">
+        <span class="time-label" id="timeline-time">t* = 0.000</span>
+        <input id="frame-slider" type="range" min="0" max="20" step="0.01" value="0" aria-label="轨迹时间轴">
+        <span class="frame-label" id="frame-label">1 / 21 帧</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const TRAJECTORY_DATA = __TRAJECTORY_DATA__;
+
+    (() => {
+      const canvas = document.getElementById('particle-canvas');
+      const ctx = canvas.getContext('2d');
+      const caseSelect = document.getElementById('case-select');
+      const playButton = document.getElementById('play-button');
+      const speedSelect = document.getElementById('speed-select');
+      const particleSize = document.getElementById('particle-size');
+      const particleSizeValue = document.getElementById('particle-size-value');
+      const frameSlider = document.getElementById('frame-slider');
+      const stageTitle = document.getElementById('stage-title');
+      const stepValue = document.getElementById('step-value');
+      const timeValue = document.getElementById('time-value');
+      const tempValue = document.getElementById('temp-value');
+      const pressureValue = document.getElementById('pressure-value');
+      const energyValue = document.getElementById('energy-value');
+      const meanSpeedValue = document.getElementById('speed-value');
+      const timelineTime = document.getElementById('timeline-time');
+      const frameLabel = document.getElementById('frame-label');
+
+      let playing = false;
+      let position = 0;
+      let previousTime = performance.now();
+
+      const activeCase = () => TRAJECTORY_DATA.cases[caseSelect.value];
+      const wrap = (value, low, length) => ((value - low) % length + length) % length + low;
+      const periodicMix = (a, b, t, low, high) => {
+        const length = high - low;
+        let delta = b - a;
+        if (delta > length / 2) delta -= length;
+        if (delta < -length / 2) delta += length;
+        return wrap(a + delta * t, low, length);
+      };
+      const speedColor = ratio => {
+        const clamped = Math.max(0, Math.min(1, ratio));
+        const hue = 210 - 202 * clamped;
+        return `hsl(${hue} 82% 58%)`;
+      };
+
+      function fitCanvas() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.round(rect.width * ratio));
+        const height = Math.max(1, Math.round(rect.height * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        return { width, height, ratio };
+      }
+
+      function draw() {
+        const simulation = activeCase();
+        const frames = simulation.frames;
+        const lastIndex = frames.length - 1;
+        const wrappedPosition = Math.max(0, Math.min(lastIndex, position));
+        const indexA = Math.floor(wrappedPosition);
+        const indexB = Math.min(lastIndex, indexA + 1);
+        const fraction = wrappedPosition - indexA;
+        const frameA = frames[indexA];
+        const frameB = frames[indexB];
+        const bounds = frameA.bounds;
+        const [xLow, xHigh] = bounds[0];
+        const [yLow, yHigh] = bounds[1];
+        const [zLow, zHigh] = bounds[2];
+        const xLength = xHigh - xLow;
+        const yLength = yHigh - yLow;
+        const zLength = zHigh - zLow;
+        const { width, height, ratio } = fitCanvas();
+        const padding = 22 * ratio;
+        const plotWidth = width - padding * 2;
+        const plotHeight = height - padding * 2;
+        const scale = Math.min(plotWidth / xLength, plotHeight / yLength);
+        const offsetX = (width - xLength * scale) / 2;
+        const offsetY = (height - yLength * scale) / 2;
+        const baseRadius = Number(particleSize.value) * ratio;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.strokeStyle = 'rgba(150, 180, 200, 0.42)';
+        ctx.lineWidth = ratio;
+        ctx.strokeRect(offsetX, offsetY, xLength * scale, yLength * scale);
+
+        const atoms = frameA.atoms.map((atomA, atomIndex) => {
+          const atomB = frameB.atoms[atomIndex];
+          return {
+            id: atomA[0],
+            x: periodicMix(atomA[1], atomB[1], fraction, xLow, xHigh),
+            y: periodicMix(atomA[2], atomB[2], fraction, yLow, yHigh),
+            z: periodicMix(atomA[3], atomB[3], fraction, zLow, zHigh),
+            speed: atomA[4] + (atomB[4] - atomA[4]) * fraction
+          };
+        }).sort((a, b) => a.z - b.z);
+
+        let speedSum = 0;
+        for (const atom of atoms) {
+          const depth = (atom.z - zLow) / zLength;
+          const x = offsetX + (atom.x - xLow) * scale;
+          const y = offsetY + (yHigh - atom.y) * scale;
+          const radius = baseRadius * (0.72 + depth * 0.55);
+          const speedRatio = atom.speed / simulation.speed_scale;
+          speedSum += atom.speed;
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = speedColor(speedRatio);
+          ctx.globalAlpha = 0.48 + depth * 0.48;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        const step = Math.round(frameA.step + (frameB.step - frameA.step) * fraction);
+        const thermo = fraction < 0.5 ? frameA.thermo : frameB.thermo;
+        const simulationTime = step * TRAJECTORY_DATA.timestep_size;
+        stepValue.textContent = step.toLocaleString('zh-CN');
+        timeValue.textContent = simulationTime.toFixed(3);
+        tempValue.textContent = thermo.temp.toFixed(3);
+        pressureValue.textContent = thermo.pressure.toFixed(3);
+        energyValue.textContent = (thermo.etotal / thermo.atoms).toFixed(5);
+        meanSpeedValue.textContent = (speedSum / atoms.length).toFixed(3);
+        timelineTime.textContent = `t* = ${simulationTime.toFixed(3)}`;
+        frameLabel.textContent = `${indexA + 1} / ${frames.length} 帧`;
+        frameSlider.value = wrappedPosition;
+      }
+
+      function resetCase() {
+        playing = false;
+        playButton.textContent = '播放';
+        position = 0;
+        const simulation = activeCase();
+        frameSlider.max = simulation.frames.length - 1;
+        stageTitle.textContent = `${simulation.label} · ${simulation.atom_count} 个粒子`;
+        draw();
+      }
+
+      function animate(now) {
+        const elapsed = Math.min(100, now - previousTime);
+        previousTime = now;
+        if (playing) {
+          const framesPerSecond = 2.4 * Number(speedSelect.value);
+          position += elapsed / 1000 * framesPerSecond;
+          const lastIndex = activeCase().frames.length - 1;
+          if (position >= lastIndex) position %= lastIndex;
+        }
+        draw();
+        requestAnimationFrame(animate);
+      }
+
+      playButton.addEventListener('click', () => {
+        playing = !playing;
+        playButton.textContent = playing ? '暂停' : '播放';
+      });
+      caseSelect.addEventListener('change', resetCase);
+      frameSlider.addEventListener('input', () => {
+        playing = false;
+        playButton.textContent = '播放';
+        position = Number(frameSlider.value);
+        draw();
+      });
+      particleSize.addEventListener('input', () => {
+        particleSizeValue.textContent = Number(particleSize.value).toFixed(1);
+        draw();
+      });
+      new ResizeObserver(draw).observe(canvas);
+      resetCase();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

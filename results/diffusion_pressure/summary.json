@@ -1,0 +1,109 @@
+{
+  "temperature_lj": 2.0,
+  "protocol": "NPT equilibration followed by fixed-volume NVT diffusion measurement",
+  "diffusion_definition": "D = (1/6) d(MSD)/dt in 3D",
+  "fit_window": "20% to 90% of NVT production time",
+  "argon_mapping": {
+    "time_unit_ps": 2.156349,
+    "diffusion_unit_m2_s": 5.376692270128815e-08
+  },
+  "cases": [
+    {
+      "target_pressure": 0.1,
+      "mean_pressure": 0.09877670862525424,
+      "pressure_std": 0.005934834063379624,
+      "mean_density": 0.05131252186558278,
+      "mean_temperature": 1.9991857754863702,
+      "fit_time_start": 100.0,
+      "fit_time_end": 450.0,
+      "msd_slope": 30.521323765250937,
+      "msd_intercept": 127.89470433862694,
+      "msd_fit_r2": 0.9990076534045611,
+      "diffusion_lj": 5.0868872942084895,
+      "diffusion_m2_s_argon": 2.735062759378727e-07,
+      "diffusion_times_pressure": 0.5024659840695399
+    },
+    {
+      "target_pressure": 0.2,
+      "mean_pressure": 0.20094743973558002,
+      "pressure_std": 0.01657382288850858,
+      "mean_density": 0.10637471775335602,
+      "mean_temperature": 2.003291541148551,
+      "fit_time_start": 100.0,
+      "fit_time_end": 450.0,
+      "msd_slope": 15.111550182298139,
+      "msd_intercept": 124.55336178030396,
+      "msd_fit_r2": 0.9989164878511458,
+      "diffusion_lj": 2.5185916970496898,
+      "diffusion_m2_s_argon": 1.3541692509137682e-07,
+      "diffusion_times_pressure": 0.5061045532614248
+    },
+    {
+      "target_pressure": 0.3,
+      "mean_pressure": 0.2971231156787398,
+      "pressure_std": 0.02867780509518184,
+      "mean_density": 0.16062474602530502,
+      "mean_temperature": 1.99790186637863,
+      "fit_time_start": 100.0,
+      "fit_time_end": 450.0,
+      "msd_slope": 9.97491774867596,
+      "msd_intercept": -82.59274010617393,
+      "msd_fit_r2": 0.9996328683740973,
+      "diffusion_lj": 1.6624862914459932,
+      "diffusion_m2_s_argon": 8.938677192412792e-08,
+      "diffusion_times_pressure": 0.49396310668762694
+    },
+    {
+      "target_pressure": 0.4,
+      "mean_pressure": 0.39805279432546414,
+      "pressure_std": 0.04277900040680563,
+      "mean_density": 0.21535927759353798,
+      "mean_temperature": 1.9970644004277134,
+      "fit_time_start": 100.0,
+      "fit_time_end": 450.0,
+      "msd_slope": 7.681864576910206,
+      "msd_intercept": -54.11606303062523,
+      "msd_fit_r2": 0.9971437747817826,
+      "diffusion_lj": 1.2803107628183676,
+      "diffusion_m2_s_argon": 6.883836981808245e-08,
+      "diffusion_times_pressure": 0.5096312767448178
+    },
+    {
+      "target_pressure": 0.5,
+      "mean_pressure": 0.5084557201826299,
+      "pressure_std": 0.05868878218476755,
+      "mean_density": 0.268049841737525,
+      "mean_temperature": 2.001764655861616,
+      "fit_time_start": 100.0,
+      "fit_time_end": 450.0,
+      "msd_slope": 5.442956266841847,
+      "msd_intercept": -3.2082348931167264,
+      "msd_fit_r2": 0.9989853248558093,
+      "diffusion_lj": 0.9071593778069745,
+      "diffusion_m2_s_argon": 4.877516814429626e-08,
+      "diffusion_times_pressure": 0.46125037476327163
+    }
+  ],
+  "inverse_pressure_fit": {
+    "model": "D = a/P + b",
+    "a": 0.507462494926292,
+    "b": -0.03764279474566124,
+    "r_squared": 0.9994755610830705
+  },
+  "power_law_fit": {
+    "model": "D = C * P^n",
+    "exponent_n": -1.0335540123185218,
+    "coefficient_C": 0.47253097210780787,
+    "r_squared_log_space": 0.9973508615666015
+  },
+  "dp_constancy": {
+    "mean": 0.4946830591053362,
+    "coefficient_of_variation": 0.03957097021136593
+  },
+  "supports_inverse_pressure": true,
+  "limitations": [
+    "One trajectory per pressure; no independent-repeat uncertainty estimate.",
+    "NPT determines equilibrium volume, then NVT at fixed volume is used for MSD to avoid barostat coordinate scaling.",
+    "Argon SI conversion is illustrative; the simulated model is in LJ reduced units."
+  ]
+}

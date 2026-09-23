@@ -1,0 +1,1096 @@
+{
+  "generated_at": "2026-08-28T05:53:47.538625+00:00",
+  "environment": {
+    "python": "3.11.5",
+    "platform": "Windows-10-10.0.26200-SP0"
+  },
+  "summary": {
+    "total": 55,
+    "valid": 17,
+    "invalid": 38,
+    "passed": 55,
+    "failed": 0,
+    "error_code_count": 15,
+    "error_codes": [
+      "COMPARABILITY_REQUIRED",
+      "CUTOFF_SIGMA_RATIO",
+      "HIGH_RISK_STATE_POINT",
+      "INTERVAL_EXCEEDS_RUN",
+      "INTERVAL_NOT_DIVISOR",
+      "INVALID_ENSEMBLE_COMPARISON",
+      "MISSING_FIELD",
+      "NOT_FINITE",
+      "OUT_OF_RANGE",
+      "PERIODIC_BOX_TOO_SMALL",
+      "THERMOSTAT_DAMPING_RATIO",
+      "TYPE_MISMATCH",
+      "UNKNOWN_FIELD",
+      "UNSUPPORTED_BOUNDARY",
+      "UNSUPPORTED_VALUE"
+    ]
+  },
+  "compiler": {
+    "spec_sha256": "60d83f1cb3b547a2ed2b96f598b970421d5d8aa2f8acc8ab921bd167b226ae30",
+    "manifest": {
+      "schema_version": "1.0",
+      "experiment_type": "lj_ensemble_comparison",
+      "spec_sha256": "60d83f1cb3b547a2ed2b96f598b970421d5d8aa2f8acc8ab921bd167b226ae30",
+      "deterministic_preparation": true,
+      "scripts": {
+        "in.lj_nve": {
+          "sha256": "6f1fd8f057b13627f64defb520548f4c0ca58f6f830336ff8da2bdc0c7f80c4a",
+          "bytes": 2111
+        },
+        "in.lj_nvt": {
+          "sha256": "3bfdd2bd75f4a7228b4ee5536d7f89a0b9e053c72766596bd3ffec14de6b3f60",
+          "bytes": 2168
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "name": "valid_default",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_temperature_min",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_temperature_max",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_density_min",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_density_max",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_cells_max",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_timestep_min_ratio_edge",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_timestep_max_ratio_edge",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_seed_min",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_seed_max",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_sampling_at_run_length",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_alternate_sampling",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_reversed_ensembles",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_shift_disabled",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_sort_disabled",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_cutoff_ratio_lower",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "valid_cutoff_ratio_upper_large_box",
+      "expected": "valid",
+      "expected_codes": [],
+      "actual": "valid",
+      "codes": [],
+      "issues": [],
+      "passed": true
+    },
+    {
+      "name": "invalid_root_type",
+      "expected": "invalid",
+      "expected_codes": [
+        "TYPE_MISMATCH"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "TYPE_MISMATCH"
+      ],
+      "issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "$",
+          "message": "Expected a JSON object.",
+          "value": [],
+          "expected": "object",
+          "hint": "Use an object with the documented fields."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_missing_system",
+      "expected": "invalid",
+      "expected_codes": [
+        "MISSING_FIELD"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "MISSING_FIELD"
+      ],
+      "issues": [
+        {
+          "code": "MISSING_FIELD",
+          "path": "$.system",
+          "message": "Required field is missing.",
+          "value": null,
+          "expected": "field must be present",
+          "hint": "Add 'system' to $."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_unknown_root_field",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNKNOWN_FIELD"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNKNOWN_FIELD"
+      ],
+      "issues": [
+        {
+          "code": "UNKNOWN_FIELD",
+          "path": "$.notes",
+          "message": "Unknown fields are not accepted by this schema version.",
+          "value": "free text",
+          "expected": "one of ['comparison', 'experiment_type', 'outputs', 'potential', 'run', 'schema_version', 'system']",
+          "hint": "Remove the field or migrate to a schema version that defines it."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_unknown_nested_field",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNKNOWN_FIELD"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNKNOWN_FIELD"
+      ],
+      "issues": [
+        {
+          "code": "UNKNOWN_FIELD",
+          "path": "$.run.command",
+          "message": "Unknown fields are not accepted by this schema version.",
+          "value": "shell rm",
+          "expected": "one of ['equilibration_steps', 'production_steps', 'seed', 'temperature', 'thermostat_damping', 'timestep']",
+          "hint": "Remove the field or migrate to a schema version that defines it."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_schema_version",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_VALUE",
+          "path": "$.schema_version",
+          "message": "Value is not supported by this compiler.",
+          "value": "2.0",
+          "expected": "one of '1.0'",
+          "hint": "Choose an explicitly supported value; values are case-sensitive."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_experiment_type",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_VALUE",
+          "path": "$.experiment_type",
+          "message": "Value is not supported by this compiler.",
+          "value": "free_form",
+          "expected": "one of 'lj_ensemble_comparison'",
+          "hint": "Choose an explicitly supported value; values are case-sensitive."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_units",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_VALUE",
+          "path": "$.system.units",
+          "message": "Value is not supported by this compiler.",
+          "value": "real",
+          "expected": "one of 'lj'",
+          "hint": "Choose an explicitly supported value; values are case-sensitive."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_dimension",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_VALUE",
+          "path": "$.system.dimension",
+          "message": "Value is not supported by this compiler.",
+          "value": 2,
+          "expected": "one of 3",
+          "hint": "Choose an explicitly supported value; values are case-sensitive."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_boundary_nonperiodic",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_BOUNDARY"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_BOUNDARY"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_BOUNDARY",
+          "path": "$.system.boundary",
+          "message": "Only fully periodic boundaries are valid for this ensemble comparison.",
+          "value": [
+            "p",
+            "p",
+            "f"
+          ],
+          "expected": "[\"p\", \"p\", \"p\"]",
+          "hint": "Wall/slab experiments require a different experiment type."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_boundary_type",
+      "expected": "invalid",
+      "expected_codes": [
+        "TYPE_MISMATCH"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "TYPE_MISMATCH"
+      ],
+      "issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "$.system.boundary",
+          "message": "Boundary must be a three-element JSON array.",
+          "value": "p p p",
+          "expected": "[\"p\", \"p\", \"p\"]",
+          "hint": "This homogeneous-fluid compiler supports only fully periodic boundaries."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_lattice",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_VALUE",
+          "path": "$.system.lattice",
+          "message": "Value is not supported by this compiler.",
+          "value": "sc",
+          "expected": "one of 'fcc'",
+          "hint": "Choose an explicitly supported value; values are case-sensitive."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_cells_boolean",
+      "expected": "invalid",
+      "expected_codes": [
+        "TYPE_MISMATCH"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "TYPE_MISMATCH"
+      ],
+      "issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "$.system.cells",
+          "message": "Expected a JSON integer.",
+          "value": true,
+          "expected": "integer in [2, 20]",
+          "hint": "Do not use a decimal, string, or boolean for this field."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_cells_below_min",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.system.cells",
+          "message": "Integer lies outside the supported range.",
+          "value": 1,
+          "expected": "[2, 20]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_small_periodic_box",
+      "expected": "invalid",
+      "expected_codes": [
+        "PERIODIC_BOX_TOO_SMALL"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "PERIODIC_BOX_TOO_SMALL"
+      ],
+      "issues": [
+        {
+          "code": "PERIODIC_BOX_TOO_SMALL",
+          "path": "$.system.cells",
+          "message": "The neighbor reach exceeds half the periodic box length.",
+          "value": {
+            "cells": 2,
+            "density": 0.8,
+            "cutoff": 2.5,
+            "neighbor_skin": 0.3,
+            "box_length": 3.41995189
+          },
+          "expected": "cutoff + neighbor_skin <= box_length / 2",
+          "hint": "Increase cells, or reduce cutoff/neighbor_skin."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_density_zero",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.system.density",
+          "message": "Number lies outside the supported range.",
+          "value": 0.0,
+          "expected": "[0.01, 1.4]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_density_above_max",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.system.density",
+          "message": "Number lies outside the supported range.",
+          "value": 1.400001,
+          "expected": "[0.01, 1.4]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_mass_string",
+      "expected": "invalid",
+      "expected_codes": [
+        "TYPE_MISMATCH"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "TYPE_MISMATCH"
+      ],
+      "issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "$.system.mass",
+          "message": "Expected a JSON number.",
+          "value": "1.0",
+          "expected": "finite number in [0.01, 100.0]",
+          "hint": "Use an unquoted number; booleans are not numbers here."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_potential_style",
+      "expected": "invalid",
+      "expected_codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "UNSUPPORTED_VALUE"
+      ],
+      "issues": [
+        {
+          "code": "UNSUPPORTED_VALUE",
+          "path": "$.potential.style",
+          "message": "Value is not supported by this compiler.",
+          "value": "eam",
+          "expected": "one of 'lj/cut'",
+          "hint": "Choose an explicitly supported value; values are case-sensitive."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_sigma_zero",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.potential.sigma",
+          "message": "Number lies outside the supported range.",
+          "value": 0.0,
+          "expected": "[0.1, 10.0]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_cutoff_sigma_ratio",
+      "expected": "invalid",
+      "expected_codes": [
+        "CUTOFF_SIGMA_RATIO"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "CUTOFF_SIGMA_RATIO"
+      ],
+      "issues": [
+        {
+          "code": "CUTOFF_SIGMA_RATIO",
+          "path": "$.potential.cutoff",
+          "message": "Cutoff is inconsistent with the Lennard-Jones sigma value.",
+          "value": 1.0,
+          "expected": "between 1.5*sigma and 5.0*sigma (here [1.5, 5])",
+          "hint": "For the standard truncated LJ model, 2.5*sigma is recommended."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_neighbor_skin_negative",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.potential.neighbor_skin",
+          "message": "Number lies outside the supported range.",
+          "value": -0.1,
+          "expected": "[0.05, 2.0]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_temperature_infinite",
+      "expected": "invalid",
+      "expected_codes": [
+        "NOT_FINITE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "NOT_FINITE"
+      ],
+      "issues": [
+        {
+          "code": "NOT_FINITE",
+          "path": "$.run.temperature",
+          "message": "NaN and infinity are forbidden.",
+          "value": "inf",
+          "expected": "finite number",
+          "hint": "Provide a finite numeric value."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_temperature_below_min",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.run.temperature",
+          "message": "Number lies outside the supported range.",
+          "value": 0.049,
+          "expected": "[0.05, 10.0]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_high_risk_state",
+      "expected": "invalid",
+      "expected_codes": [
+        "HIGH_RISK_STATE_POINT"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "HIGH_RISK_STATE_POINT"
+      ],
+      "issues": [
+        {
+          "code": "HIGH_RISK_STATE_POINT",
+          "path": "$.run.temperature",
+          "message": "Very low temperature combined with high density is outside this short-demo reliability envelope.",
+          "value": {
+            "temperature": 0.05,
+            "density": 1.3
+          },
+          "expected": "temperature >= 0.1 when density > 1.2",
+          "hint": "Use a longer specialized solid-state protocol for this state point."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_timestep_zero",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.run.timestep",
+          "message": "Number lies outside the supported range.",
+          "value": 0.0,
+          "expected": "[0.0001, 0.02]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_seed_zero",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.run.seed",
+          "message": "Integer lies outside the supported range.",
+          "value": 0,
+          "expected": "[1, 2147483646]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_equilibration_too_short",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.run.equilibration_steps",
+          "message": "Integer lies outside the supported range.",
+          "value": 99,
+          "expected": "[100, 10000000]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_production_too_short",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.run.production_steps",
+          "message": "Integer lies outside the supported range.",
+          "value": 99,
+          "expected": "[100, 10000000]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_damping_too_small",
+      "expected": "invalid",
+      "expected_codes": [
+        "THERMOSTAT_DAMPING_RATIO"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "THERMOSTAT_DAMPING_RATIO"
+      ],
+      "issues": [
+        {
+          "code": "THERMOSTAT_DAMPING_RATIO",
+          "path": "$.run.thermostat_damping",
+          "message": "Nose-Hoover damping is inconsistent with the integration timestep.",
+          "value": 0.01,
+          "expected": "between 10*timestep and 1000*timestep (here [0.05, 5])",
+          "hint": "A value near 100*timestep is a conventional starting point."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_damping_too_large",
+      "expected": "invalid",
+      "expected_codes": [
+        "THERMOSTAT_DAMPING_RATIO"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "THERMOSTAT_DAMPING_RATIO"
+      ],
+      "issues": [
+        {
+          "code": "THERMOSTAT_DAMPING_RATIO",
+          "path": "$.run.thermostat_damping",
+          "message": "Nose-Hoover damping is inconsistent with the integration timestep.",
+          "value": 6.0,
+          "expected": "between 10*timestep and 1000*timestep (here [0.05, 5])",
+          "hint": "A value near 100*timestep is a conventional starting point."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_thermo_interval_zero",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.outputs.thermo_interval",
+          "message": "Integer lies outside the supported range.",
+          "value": 0,
+          "expected": "[1, 10000000]",
+          "hint": "Choose a value inside the inclusive range."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_interval_exceeds_run",
+      "expected": "invalid",
+      "expected_codes": [
+        "INTERVAL_EXCEEDS_RUN"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "INTERVAL_EXCEEDS_RUN"
+      ],
+      "issues": [
+        {
+          "code": "INTERVAL_EXCEEDS_RUN",
+          "path": "$.outputs.trajectory_interval",
+          "message": "Sampling interval exceeds production length.",
+          "value": 20000,
+          "expected": "<= 10000",
+          "hint": "Reduce the interval or increase production_steps."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_interval_not_divisor",
+      "expected": "invalid",
+      "expected_codes": [
+        "INTERVAL_NOT_DIVISOR"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "INTERVAL_NOT_DIVISOR"
+      ],
+      "issues": [
+        {
+          "code": "INTERVAL_NOT_DIVISOR",
+          "path": "$.outputs.thermo_interval",
+          "message": "Production length must be divisible by the sampling interval.",
+          "value": 333,
+          "expected": "a positive divisor of 10000",
+          "hint": "Choose an interval that includes an exact final sample."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_ensembles_type",
+      "expected": "invalid",
+      "expected_codes": [
+        "TYPE_MISMATCH"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "TYPE_MISMATCH"
+      ],
+      "issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "$.comparison.ensembles",
+          "message": "Ensembles must be a JSON array.",
+          "value": "nve,nvt",
+          "expected": "[\"nve\", \"nvt\"]",
+          "hint": "Provide both ensemble names exactly once."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_ensemble_missing_nvt",
+      "expected": "invalid",
+      "expected_codes": [
+        "INVALID_ENSEMBLE_COMPARISON"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "INVALID_ENSEMBLE_COMPARISON"
+      ],
+      "issues": [
+        {
+          "code": "INVALID_ENSEMBLE_COMPARISON",
+          "path": "$.comparison.ensembles",
+          "message": "This experiment requires exactly one NVE case and one NVT case.",
+          "value": [
+            "nve"
+          ],
+          "expected": "[\"nve\", \"nvt\"] in either order, without duplicates",
+          "hint": "Add the missing ensemble and remove duplicates or unsupported names."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_ensemble_duplicate",
+      "expected": "invalid",
+      "expected_codes": [
+        "INVALID_ENSEMBLE_COMPARISON"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "INVALID_ENSEMBLE_COMPARISON"
+      ],
+      "issues": [
+        {
+          "code": "INVALID_ENSEMBLE_COMPARISON",
+          "path": "$.comparison.ensembles",
+          "message": "This experiment requires exactly one NVE case and one NVT case.",
+          "value": [
+            "nve",
+            "nve"
+          ],
+          "expected": "[\"nve\", \"nvt\"] in either order, without duplicates",
+          "hint": "Add the missing ensemble and remove duplicates or unsupported names."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_shared_state_false",
+      "expected": "invalid",
+      "expected_codes": [
+        "COMPARABILITY_REQUIRED"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "COMPARABILITY_REQUIRED"
+      ],
+      "issues": [
+        {
+          "code": "COMPARABILITY_REQUIRED",
+          "path": "$.comparison.shared_initial_state",
+          "message": "NVE and NVT must use the same deterministic preparation protocol.",
+          "value": false,
+          "expected": "true",
+          "hint": "Set this field to true; independent states are a different study design."
+        }
+      ],
+      "passed": true
+    },
+    {
+      "name": "invalid_multiple_issues",
+      "expected": "invalid",
+      "expected_codes": [
+        "OUT_OF_RANGE",
+        "COMPARABILITY_REQUIRED",
+        "INTERVAL_NOT_DIVISOR"
+      ],
+      "actual": "invalid",
+      "codes": [
+        "COMPARABILITY_REQUIRED",
+        "INTERVAL_NOT_DIVISOR",
+        "OUT_OF_RANGE"
+      ],
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "path": "$.run.temperature",
+          "message": "Number lies outside the supported range.",
+          "value": -1,
+          "expected": "[0.05, 10.0]",
+          "hint": "Choose a value inside the inclusive range."
+        },
+        {
+          "code": "COMPARABILITY_REQUIRED",
+          "path": "$.comparison.shared_initial_state",
+          "message": "NVE and NVT must use the same deterministic preparation protocol.",
+          "value": false,
+          "expected": "true",
+          "hint": "Set this field to true; independent states are a different study design."
+        },
+        {
+          "code": "INTERVAL_NOT_DIVISOR",
+          "path": "$.outputs.thermo_interval",
+          "message": "Production length must be divisible by the sampling interval.",
+          "value": 333,
+          "expected": "a positive divisor of 10000",
+          "hint": "Choose an interval that includes an exact final sample."
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "lammps_checks": [
+    {
+      "script": "in.lj_nve",
+      "exit_code": 0,
+      "passed": true,
+      "warnings": [],
+      "error_excerpt": ""
+    },
+    {
+      "script": "in.lj_nvt",
+      "exit_code": 0,
+      "passed": true,
+      "warnings": [],
+      "error_excerpt": ""
+    }
+  ]
+}

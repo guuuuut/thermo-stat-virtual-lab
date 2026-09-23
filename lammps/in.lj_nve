@@ -1,0 +1,62 @@
+# Minimal LJ fluid: equilibrate in NVT, then sample an NVE production run.
+# All quantities use reduced Lennard-Jones units: epsilon = sigma = mass = k_B = 1.
+
+clear
+units           lj
+dimension       3
+boundary        p p p
+atom_style      atomic
+
+# Command-line -var values override these defaults.
+variable        temperature index 1.2
+variable        density index 0.8
+variable        cells index 4
+variable        seed index 20260824
+variable        equil_steps index 5000
+variable        prod_steps index 10000
+
+lattice         fcc ${density}
+region          box block 0 ${cells} 0 ${cells} 0 ${cells} units lattice
+create_box      1 box
+create_atoms    1 box
+mass            1 1.0
+
+pair_style      lj/cut 2.5
+pair_coeff      1 1 1.0 1.0 2.5
+pair_modify     shift yes
+neighbor        0.3 bin
+neigh_modify    delay 0 every 1 check yes
+
+timestep        0.005
+velocity        all create ${temperature} ${seed} mom yes rot no dist gaussian
+
+thermo          500
+thermo_style    custom step atoms temp press pe ke etotal density
+thermo_modify   flush yes
+
+# Prepare the same kind of equilibrated initial state used by the NVT case.
+fix             equil all nvt temp ${temperature} ${temperature} $(100.0*dt)
+run             ${equil_steps}
+unfix           equil
+
+# Give both cases the same particle state and exact production-start temperature.
+velocity        all scale ${temperature}
+
+# Production: pure velocity-Verlet integration under periodic boundaries.
+reset_timestep  0
+fix             integrator all nve
+
+variable        sample_step equal step
+variable        sample_temp equal temp
+variable        sample_press equal press
+variable        sample_pe equal pe
+variable        sample_ke equal ke
+variable        sample_etotal equal etotal
+variable        sample_atoms equal atoms
+
+fix             observables all print 100 "${sample_step},${sample_temp},${sample_press},${sample_pe},${sample_ke},${sample_etotal},${sample_atoms}" file thermo.csv screen no title "step,temp,pressure,pe,ke,etotal,atoms"
+dump            trajectory all custom 500 trajectory.lammpstrj id type x y z vx vy vz
+dump_modify     trajectory sort id
+
+run             ${prod_steps}
+write_data      final.data

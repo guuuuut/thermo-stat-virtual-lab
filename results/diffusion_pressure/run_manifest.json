@@ -1,0 +1,38 @@
+{
+  "temperature": 2.0,
+  "pressures": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5
+  ],
+  "protocol": "NPT equilibration followed by fixed-volume NVT diffusion measurement",
+  "cases": [
+    {
+      "target_pressure": 0.1,
+      "directory": "p_0p10",
+      "initial_density": 0.05
+    },
+    {
+      "target_pressure": 0.2,
+      "directory": "p_0p20",
+      "initial_density": 0.1
+    },
+    {
+      "target_pressure": 0.3,
+      "directory": "p_0p30",
+      "initial_density": 0.15
+    },
+    {
+      "target_pressure": 0.4,
+      "directory": "p_0p40",
+      "initial_density": 0.2
+    },
+    {
+      "target_pressure": 0.5,
+      "directory": "p_0p50",
+      "initial_density": 0.25
+    }
+  ]
+}
