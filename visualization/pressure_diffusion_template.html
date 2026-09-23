@@ -128,6 +128,18 @@
     }
     .metric span { color: var(--muted); }
     .metric strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .mixing-definition {
+      margin-top: 12px;
+      padding: 11px 12px;
+      color: var(--muted);
+      background: var(--soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .mixing-definition h2 { margin: 0 0 5px; color: var(--text); font-size: 13px; font-weight: 600; }
+    .mixing-formula { margin: 7px 0; color: var(--text); font-size: 13px; text-align: center; }
     .wall-status { margin-top: 8px; color: #a8e8ff; font-size: 12px; }
     .data-note { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
     .data-note a { color: var(--accent); }
@@ -219,6 +231,13 @@
           <div class="metric"><span>平均密度 ρ*</span><strong id="density-value">0.000</strong></div>
           <div class="metric"><span>平均温度 T*</span><strong id="temperature-value">0.000</strong></div>
           <div class="metric"><span>混合度 M</span><strong id="mixing-value">0.000</strong></div>
+
+          <section class="mixing-definition" aria-labelledby="mixing-definition-title">
+            <h2 id="mixing-definition-title">混合度如何计算？</h2>
+            沿左右方向将箱体均分为 20 层，统计每层 A、B 粒子数 n<sub>A,i</sub>、n<sub>B,i</sub>。
+            <div class="mixing-formula">M = 1 − Σ<sub>i=1…20</sub> |n<sub>A,i</sub> − n<sub>B,i</sub>| / N</div>
+            N 为总粒子数。M = 0 表示两类粒子在各层完全分开；越接近 1，表示局部混合越均匀。
+          </section>
 
           <div class="data-note">
             D–P 关系不在动画中预先展示，留作后续分析任务。<br>
