@@ -12,6 +12,7 @@
 !/reports/
 !/visualization/
 !/results/
+!/downloads/
 
 # Local environment, caches, generated files, and private material.
 **/__pycache__/

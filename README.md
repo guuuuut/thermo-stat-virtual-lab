@@ -6,6 +6,7 @@
 
 - [五组压强的三维扩散动画](visualization/pressure_diffusion.html)：0–100 个 LJ 约化时间单位，81 个真实轨迹帧/组；拖动旋转视角，0.25×、0.5×、1×、2× 播放。
 - [动画预览图](visualization/pressure_diffusion_preview.png)。
+- [五组压强的轨迹下载包](downloads/pressure_diffusion_trajectories.zip)：包含 0–100 t* 预览轨迹、0–500 t* 分析轨迹及对应的 MSD、热力学数据；文件说明见 [README_trajectories.md](downloads/README_trajectories.md)。
 - [扩散系数与压强数据](results/diffusion_pressure/diffusion_vs_pressure.csv)：供课后分析，动画页面不预先展示幂律结论。
 - [实验与校验说明](docs/experiment_spec.md)、[压强扩散计算报告](reports/pressure_diffusion_report.md)。
 
