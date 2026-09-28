@@ -16,6 +16,20 @@
 
 页面使用 CDN 加载 Three.js，首次打开需要网络连接。轨迹数据已嵌入 HTML；CSV 下载链接从仓库的 results 目录读取文件。
 
+## 一键同步到云服务器
+
+默认使用现有阿里云轻量服务器、公网 IP 和项目专用 SSH 密钥：
+
+    .\scripts\deploy_site.ps1
+
+脚本会依次完成：重建动画 HTML、按白名单重建轨迹 ZIP、运行包内范例、计算本地哈希、上传临时文件、备份线上 HTML/ZIP/CSV、原子切换、核对服务器哈希，并从公网实际下载 ZIP 和 CSV 再次验证。任一步失败都会停止；服务器切换后的健康检查失败时会自动恢复备份。
+
+如需改用正式域名进行公网检查：
+
+    .\scripts\deploy_site.ps1 -PublicBaseUrl "https://boltzmann.me"
+
+如服务器、用户或密钥路径发生变化，可使用 `-ServerAddress`、`-RemoteUser` 和 `-KeyPath` 参数覆盖默认值。脚本只负责构建和部署，不会自动执行 Git 提交或推送。
+
 ## 复现实验
 
 环境：Windows 10/11、PowerShell、64 位 Python 3.11 或更新版本。LAMMPS 的 Windows wheel 依赖 Microsoft MPI 运行时。
