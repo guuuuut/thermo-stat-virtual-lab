@@ -34,6 +34,11 @@
 !/results/diffusion_pressure/summary.json
 !/results/diffusion_pressure/diffusion_vs_pressure.csv
 !/results/diffusion_pressure/diffusion_vs_pressure.png
+!/results/diffusion_pressure/msd_theory_curves.csv
+!/results/diffusion_pressure/speed_distribution.csv
+!/results/diffusion_pressure/msd_theory_comparison.png
+!/results/diffusion_pressure/diffusion_pressure_comparison.png
+!/results/diffusion_pressure/speed_distribution_comparison.png
 !/results/diffusion_pressure/p_0p10/
 !/results/diffusion_pressure/p_0p20/
 !/results/diffusion_pressure/p_0p30/

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>压强与气体扩散数据分析</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: light-dark(#eef3f7, #091118);
+      --surface: light-dark(#ffffff, #121d26);
+      --soft: light-dark(#f3f7fa, #192731);
+      --text: light-dark(#17232d, #edf5f8);
+      --muted: light-dark(#60717e, #a8bac5);
+      --border: light-dark(#cbd7df, #344753);
+      --accent: light-dark(#176b8f, #67c8ec);
+      --accent-text: light-dark(#ffffff, #07131b);
+      --success: light-dark(#16845d, #58d3a4);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: var(--page); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    a { color: var(--accent); }
+    .app { width: min(1180px, calc(100% - 24px)); margin: 18px auto 40px; }
+    .shell { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 48px rgb(0 0 0 / 12%); }
+    header { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 17px 20px; border-bottom: 1px solid var(--border); }
+    h1 { margin: 0; font-size: 22px; font-weight: 600; }
+    h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+    .subtitle, .note { color: var(--muted); font-size: 13px; line-height: 1.65; }
+    .actions { display: flex; gap: 9px; flex-wrap: wrap; }
+    .button { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; background: var(--surface); }
+    .button.primary { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+    .summary > div { padding: 14px 18px; background: var(--soft); }
+    .summary span { display: block; color: var(--muted); font-size: 12px; }
+    .summary strong { display: block; margin-top: 4px; color: var(--success); font-size: 18px; font-variant-numeric: tabular-nums; }
+    section { padding: 22px 20px; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: 0; }
+    .figure { margin-top: 14px; padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px; }
+    .figure img { display: block; width: 100%; height: auto; }
+    .formula { margin: 10px 0; padding: 9px 12px; background: var(--soft); border-left: 3px solid var(--accent); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; }
+    .table-wrap { overflow-x: auto; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-weight: 600; }
+    @media (max-width: 720px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .summary { grid-template-columns: 1fr; }
+      .app { width: 100%; margin: 0; }
+      .shell { border-radius: 0; border-left: 0; border-right: 0; }
+      section { padding: 18px 12px; }
+      .figure { padding: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <article class="shell">
+      <header>
+        <div>
+          <h1>压强与气体扩散：数据分析</h1>
+          <div class="subtitle">T*=2.0 · 五个压力点 · 周期边界 NVT 分析轨迹</div>
+        </div>
+        <nav class="actions" aria-label="页面导航">
+          <a class="button primary" href="index.html">返回三维动画</a>
+          <a class="button" href="downloads/pressure_diffusion_trajectories.zip" download>下载轨迹数据</a>
+        </nav>
+      </header>
+
+      <div class="summary" aria-label="主要分析结果">
+        <div><span>D* 与 1/P* 拟合 R²</span><strong>__INV_R2__</strong></div>
+        <div><span>幂律指数 n</span><strong>__POWER_EXPONENT__</strong></div>
+        <div><span>D*P* 变异系数</span><strong>__DP_CV__</strong></div>
+      </div>
+
+      <section>
+        <h2>1. 均方位移与扩散模型</h2>
+        <div class="note">蓝线为 LAMMPS 输出的实际 MSD；橙色虚线为 Einstein 扩散模型。灰色区域是用于估计斜率的 20%–90% 时间窗。</div>
+        <div class="formula">MSD*(t*) = 6 D* t*；D* = (1/6) d(MSD*)/dt*</div>
+        <div class="figure"><img src="__MSD_IMAGE__" alt="五个压强下的实际 MSD 曲线与 Einstein 扩散模型曲线"></div>
+      </section>
+
+      <section>
+        <h2>2. 扩散系数与压强</h2>
+        <div class="note">圆点为五条周期边界轨迹得到的扩散系数；横向误差棒表示生产阶段压强标准差。曲线采用稀薄气体近似 D∝1/P 的形式，并由五个压力点共同确定系数。</div>
+        <div class="formula">__FIT_FORMULA__</div>
+        <div class="figure"><img src="__DIFFUSION_IMAGE__" alt="扩散系数随平均压强变化的实际点和反压强理论趋势"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>目标 P*</th><th>平均 P*</th><th>平均 T*</th><th>D*</th><th>MSD 拟合 R²</th><th>D*P*</th></tr></thead>
+            <tbody>__CASE_ROWS__</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. 速率分布与 Maxwell 理论</h2>
+        <div class="note">直方图使用 t*≥50 的长轨迹速度样本；理论曲线使用各压力点的实测平均温度。LJ 约化单位中 m*=k*=1。</div>
+        <div class="formula">f(v*) = 4π [1/(2πT*)]^(3/2) v*² exp[-v*²/(2T*)]</div>
+        <div class="figure"><img src="__SPEED_IMAGE__" alt="五个压强下的实际速率直方图与 Maxwell 理论分布"></div>
+        <p class="note">当前每个压强只有一条轨迹；这些曲线用于教学比较，还不能替代独立重复模拟和不确定度估计。</p>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

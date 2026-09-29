@@ -5,6 +5,7 @@
 ## 动画与数据
 
 - [五组压强的三维扩散动画](visualization/pressure_diffusion.html)：0–100 个 LJ 约化时间单位，81 个真实轨迹帧/组；拖动旋转视角，0.25×、0.5×、1×、2× 播放。
+- [MSD、扩散系数与速率分布分析页](visualization/pressure_analysis.html)：比较 LAMMPS 数据与 Einstein、反压强和 Maxwell 理论曲线。
 - [动画预览图](visualization/pressure_diffusion_preview.png)。
 - [五组压强的轨迹下载包](downloads/pressure_diffusion_trajectories.zip)：包含 0–100 t* 预览轨迹、0–500 t* 分析轨迹及对应的 MSD、热力学数据；文件说明见 [README_trajectories.md](downloads/README_trajectories.md)。
 - [扩散系数与压强数据](results/diffusion_pressure/diffusion_vs_pressure.csv)：供课后分析，动画页面不预先展示幂律结论。
@@ -22,7 +23,7 @@
 
     .\scripts\deploy_site.ps1
 
-脚本会依次完成：重建动画 HTML、按白名单重建轨迹 ZIP、运行包内范例、计算本地哈希、上传临时文件、备份线上 HTML/ZIP/CSV、原子切换、核对服务器哈希，并从公网实际下载 ZIP 和 CSV 再次验证。任一步失败都会停止；服务器切换后的健康检查失败时会自动恢复备份。
+脚本会依次完成：重新生成 MSD、扩散系数和速率分布分析，重建动画与分析 HTML，按白名单重建无完整源码的轨迹 ZIP，计算本地哈希，上传临时文件，备份线上页面/ZIP/CSV，原子切换，核对服务器哈希，并从公网实际下载 ZIP 和 CSV 再次验证。任一步失败都会停止；服务器切换后的健康检查失败时会自动恢复备份。
 
 如需改用正式域名进行公网检查：
 
