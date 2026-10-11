@@ -38,7 +38,9 @@
     .toc span { color: var(--muted); font-size: 12px; line-height: 1.5; }
     section { padding: 25px 22px; border-bottom: 1px solid var(--border); scroll-margin-top: 12px; }
     section:last-child { border-bottom: 0; }
-    .formula { margin: 12px 0; padding: 11px 14px; overflow-x: auto; background: var(--soft); border-left: 3px solid var(--accent); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .formula { margin: 18px 0; padding: 16px 14px; overflow-x: auto; background: var(--soft); border: 1px solid var(--border); border-radius: 10px; font-size: 1.08em; }
+    mjx-container[display="true"] { margin: .3em 0 !important; }
+    td mjx-container { white-space: nowrap; }
     .callout { margin: 14px 0; padding: 12px 14px; background: var(--soft); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); line-height: 1.7; }
     .steps { counter-reset: step; padding-left: 0; list-style: none; }
     .steps li { position: relative; padding: 0 0 15px 40px; }
@@ -58,6 +60,24 @@
       section { padding: 20px 14px; }
     }
   </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'local' },
+      startup: {
+        pageReady() {
+          return MathJax.startup.defaultPageReady().then(() => {
+            if (location.hash) {
+              const target = document.getElementById(location.hash.slice(1));
+              if (target) target.scrollIntoView({ behavior: 'instant', block: 'start' });
+            }
+          });
+        }
+      },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
 </head>
 <body>
   <main class="app">
@@ -81,7 +101,7 @@
       <section id="md-lammps">
         <h2>1. 分子动力学模拟与 LAMMPS 基础</h2>
         <p>经典分子动力学（Molecular Dynamics, MD）把原子或粗粒化粒子视为遵循经典力学的质点。给定粒子间势能后，程序计算每个粒子的力，并用很小的时间步反复积分牛顿方程，从而得到位置和速度随时间变化的轨迹。</p>
-        <div class="formula">mᵢ d²rᵢ/dt² = Fᵢ = −∇ᵢU(r₁, r₂, …)</div>
+        <div class="formula">\[m_i\frac{\mathrm{d}^2\mathbf{r}_i}{\mathrm{d}t^2}=\mathbf{F}_i=-\nabla_i U(\mathbf{r}_1,\mathbf{r}_2,\ldots)\]</div>
         <ol class="steps">
           <li><strong>定义模型：</strong>选择粒子、相互作用势、模拟盒和边界条件。</li>
           <li><strong>建立初态：</strong>生成坐标，指定温度对应的初速度，避免粒子严重重叠。</li>
@@ -114,32 +134,32 @@
       <section id="lj-model">
         <h2>2. 本实验的 Lennard–Jones 模型</h2>
         <p>本实验使用单组分、三维 Lennard–Jones（LJ）粒子。任意两个粒子之间只通过距离 <em>r</em> 决定相互作用：</p>
-        <div class="formula">U(r) = 4ε[(σ/r)¹² − (σ/r)⁶]</div>
+        <div class="formula">\[U(r)=4\varepsilon\left[\left(\frac{\sigma}{r}\right)^{12}-\left(\frac{\sigma}{r}\right)^6\right]\]</div>
         <ul>
-          <li><strong>σ：</strong>长度尺度；当 r=σ 时势能为零。</li>
-          <li><strong>ε：</strong>能量尺度；势阱最低点为 −ε。</li>
-          <li><strong>r⁻¹²：</strong>描述短距离强排斥。</li>
-          <li><strong>r⁻⁶：</strong>描述较长距离的吸引。</li>
-          <li><strong>r<sub>min</sub>=2<sup>1/6</sup>σ：</strong>势能最低、作用力为零的位置。</li>
+          <li><strong>\(\sigma\)：</strong>长度尺度；当 \(r=\sigma\) 时势能为零。</li>
+          <li><strong>\(\varepsilon\)：</strong>能量尺度；势阱最低点为 \(-\varepsilon\)。</li>
+          <li><strong>\(r^{-12}\)：</strong>描述短距离强排斥。</li>
+          <li><strong>\(r^{-6}\)：</strong>描述较长距离的吸引。</li>
+          <li><strong>\(r_{\min}=2^{1/6}\sigma\)：</strong>势能最低、作用力为零的位置。</li>
         </ul>
-        <p>LAMMPS 中使用 <code>pair_style lj/cut 2.5</code>，即在 r<sub>c</sub>=2.5σ 处截断；<code>pair_modify shift yes</code> 将势能整体平移，使 U(r<sub>c</sub>)=0。截断模型和无限程 LJ 势并不完全相同，比较文献时必须确认其势函数、截断半径和尾修正。</p>
+        <p>LAMMPS 中使用 <code>pair_style lj/cut 2.5</code>，即在 \(r_c=2.5\sigma\) 处截断；<code>pair_modify shift yes</code> 将势能整体平移，使 \(U(r_c)=0\)。截断模型和无限程 LJ 势并不完全相同，比较文献时必须确认其势函数、截断半径和尾修正。</p>
         <h3>LJ 约化单位</h3>
-        <p>在 <code>units lj</code> 中取 σ=ε=m=k<sub>B</sub>=1。模拟输出没有预设的米、秒或帕；需要选择一种真实物质的 σ、ε、m 才能换算。</p>
+        <p>在 <code>units lj</code> 中取 \(\sigma=\varepsilon=m=k_{\mathrm B}=1\)。模拟输出没有预设的米、秒或帕；需要选择一种真实物质的 \(\sigma,\varepsilon,m\) 才能换算。</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>物理量</th><th>约化量</th><th>恢复实际单位</th></tr></thead>
             <tbody>
-              <tr><td>长度</td><td>r*=r/σ</td><td>r=r*σ</td></tr>
-              <tr><td>温度</td><td>T*=k<sub>B</sub>T/ε</td><td>T=T*ε/k<sub>B</sub></td></tr>
-              <tr><td>时间</td><td>t*=t/[σ√(m/ε)]</td><td>t=t*σ√(m/ε)</td></tr>
-              <tr><td>压强</td><td>P*=Pσ³/ε</td><td>P=P*ε/σ³</td></tr>
-              <tr><td>速度</td><td>v*=v/√(ε/m)</td><td>v=v*√(ε/m)</td></tr>
-              <tr><td>扩散系数</td><td>D*=D/[σ√(ε/m)]</td><td>D=D*σ√(ε/m)</td></tr>
+              <tr><td>长度</td><td>\(r^*=\frac{r}{\sigma}\)</td><td>\(r=r^*\sigma\)</td></tr>
+              <tr><td>温度</td><td>\(T^*=\frac{k_{\mathrm B}T}{\varepsilon}\)</td><td>\(T=\frac{T^*\varepsilon}{k_{\mathrm B}}\)</td></tr>
+              <tr><td>时间</td><td>\(t^*=\frac{t}{\sigma\sqrt{m/\varepsilon}}\)</td><td>\(t=t^*\sigma\sqrt{\frac{m}{\varepsilon}}\)</td></tr>
+              <tr><td>压强</td><td>\(P^*=\frac{P\sigma^3}{\varepsilon}\)</td><td>\(P=\frac{P^*\varepsilon}{\sigma^3}\)</td></tr>
+              <tr><td>速度</td><td>\(v^*=\frac{v}{\sqrt{\varepsilon/m}}\)</td><td>\(v=v^*\sqrt{\frac{\varepsilon}{m}}\)</td></tr>
+              <tr><td>扩散系数</td><td>\(D^*=\frac{D}{\sigma\sqrt{\varepsilon/m}}\)</td><td>\(D=D^*\sigma\sqrt{\frac{\varepsilon}{m}}\)</td></tr>
             </tbody>
           </table>
         </div>
         <h3>氩参数换算示例</h3>
-        <p>若取 σ=3.405 Å、ε/k<sub>B</sub>=119.8 K、m=39.948 u，则时间单位约为 2.156 ps，扩散系数单位约为 5.377×10⁻⁸ m²/s。因此 T*=2 对应约 239.6 K，100 t* 对应约 215.6 ps；P*=0.30 算例的 D*=1.662 对应约 8.94×10⁻⁸ m²/s。</p>
+        <p>若取 \(\sigma=3.405\,\text{Å}\)、\(\varepsilon/k_{\mathrm B}=119.8\,\mathrm K\)、\(m=39.948\,\mathrm u\)，则时间单位约为 \(2.156\,\mathrm{ps}\)，扩散系数单位约为 \(5.377\times10^{-8}\,\mathrm{m^2/s}\)。因此 \(T^*=2\) 对应约 \(239.6\,\mathrm K\)，\(100t^*\) 对应约 \(215.6\,\mathrm{ps}\)；\(P^*=0.30\) 算例的 \(D^*=1.662\) 对应约 \(8.94\times10^{-8}\,\mathrm{m^2/s}\)。</p>
         <div class="callout"><span class="task">建议任务：</span>从原始论文或可信数据手册查找另一种稀有气体的 σ、ε/k<sub>B</sub> 和原子质量，独立完成时间、压强、速度与扩散系数的 SI 换算，并说明这种映射的局限。</div>
         <h3>原始文献与官方说明</h3>
         <ul class="sources">
@@ -198,7 +218,9 @@ fix ... wall/reflect       # 预览轨迹中的六面反射墙</code></pre>
           </table>
         </div>
         <h3>从输出到图的核心关系</h3>
-        <div class="formula">D* = (1/6) d(MSD*)/dt*　　·　　v* = √(vx*²+vy*²+vz*²)　　·　　D* ≈ a/P*+b</div>
+        <div class="formula">\[D^*=\frac{1}{6}\frac{\mathrm{d}\,\mathrm{MSD}^*}{\mathrm{d}t^*}\]</div>
+        <div class="formula">\[v^*=\sqrt{(v_x^*)^2+(v_y^*)^2+(v_z^*)^2}\]</div>
+        <div class="formula">\[D^*\approx\frac{a}{P^*}+b\]</div>
         <div class="callout"><span class="task">建议任务：</span>先不看分析页，任选一个压强，仅根据 README 和原始 CSV 独立得到 D*；再与 summary.json 对照，解释拟合窗改变时结果为什么会变化。</div>
         <h3>对应的 LAMMPS 官方文档</h3>
         <ul class="sources">

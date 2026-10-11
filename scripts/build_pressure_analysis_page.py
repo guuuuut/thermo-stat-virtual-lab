@@ -41,7 +41,7 @@ def main() -> None:
         "__POWER_EXPONENT__": f"{float(power_fit['exponent_n']):.3f}",
         "__DP_CV__": f"{float(summary['dp_constancy']['coefficient_of_variation']) * 100:.1f}%",
         "__FIT_FORMULA__": html.escape(
-            f"D* = {float(inverse_fit['a']):.4f}/P* "
+            rf"D^* = \frac{{{float(inverse_fit['a']):.4f}}}{{P^*}} "
             f"{float(inverse_fit['b']):+.4f}"
         ),
     }
