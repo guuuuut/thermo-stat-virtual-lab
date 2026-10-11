@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分子动力学、Lennard–Jones 模型与 LAMMPS 数据指南</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: light-dark(#eef3f7, #091118);
+      --surface: light-dark(#ffffff, #121d26);
+      --soft: light-dark(#f3f7fa, #192731);
+      --text: light-dark(#17232d, #edf5f8);
+      --muted: light-dark(#60717e, #a8bac5);
+      --border: light-dark(#cbd7df, #344753);
+      --accent: light-dark(#176b8f, #67c8ec);
+      --accent-text: light-dark(#ffffff, #07131b);
+      --success: light-dark(#16845d, #58d3a4);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--text); background: var(--page); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    a { color: var(--accent); }
+    .app { width: min(1080px, calc(100% - 24px)); margin: 18px auto 42px; }
+    .shell { overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 18px 48px rgb(0 0 0 / 12%); }
+    header { padding: 20px; border-bottom: 1px solid var(--border); }
+    h1 { margin: 0; font-size: 23px; font-weight: 600; }
+    h2 { margin: 0 0 10px; font-size: 20px; font-weight: 600; }
+    h3 { margin: 22px 0 8px; font-size: 16px; font-weight: 600; }
+    p, li { line-height: 1.75; }
+    .subtitle { margin-top: 5px; color: var(--muted); font-size: 13px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+    .button { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); text-decoration: none; }
+    .button.primary { color: var(--accent-text); background: var(--accent); border-color: var(--accent); }
+    .toc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+    .toc a { display: block; padding: 15px 18px; color: var(--text); background: var(--soft); text-decoration: none; }
+    .toc strong { display: block; margin-bottom: 4px; color: var(--accent); }
+    .toc span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    section { padding: 25px 22px; border-bottom: 1px solid var(--border); scroll-margin-top: 12px; }
+    section:last-child { border-bottom: 0; }
+    .formula { margin: 12px 0; padding: 11px 14px; overflow-x: auto; background: var(--soft); border-left: 3px solid var(--accent); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .callout { margin: 14px 0; padding: 12px 14px; background: var(--soft); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); line-height: 1.7; }
+    .steps { counter-reset: step; padding-left: 0; list-style: none; }
+    .steps li { position: relative; padding: 0 0 15px 40px; }
+    .steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 1px; width: 27px; height: 27px; border-radius: 50%; display: grid; place-items: center; color: var(--accent-text); background: var(--accent); font-size: 13px; }
+    .table-wrap { overflow-x: auto; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--muted); white-space: nowrap; }
+    code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    pre { margin: 10px 0; padding: 12px 14px; overflow-x: auto; color: var(--text); background: var(--soft); border: 1px solid var(--border); border-radius: 8px; line-height: 1.55; }
+    .sources li { margin-bottom: 8px; }
+    .task { color: var(--success); font-weight: 600; }
+    @media (max-width: 720px) {
+      .app { width: 100%; margin: 0; }
+      .shell { border-radius: 0; border-left: 0; border-right: 0; }
+      .toc { grid-template-columns: 1fr; }
+      section { padding: 20px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <article class="shell">
+      <header>
+        <h1>从分子动力学到本实验数据</h1>
+        <div class="subtitle">面向首次接触 LAMMPS 的学习指南 · 先理解模型，再阅读输入和输出</div>
+        <nav class="actions" aria-label="页面导航">
+          <a class="button primary" href="index.html">返回三维动画</a>
+          <a class="button" href="pressure_analysis.html">查看数据分析</a>
+          <a class="button" href="downloads/pressure_diffusion_trajectories.zip" download>下载数据包</a>
+        </nav>
+      </header>
+
+      <nav class="toc" aria-label="学习指南目录">
+        <a href="#md-lammps"><strong>1. MD 与 LAMMPS</strong><span>模拟在做什么、系综是什么、LAMMPS 扮演什么角色</span></a>
+        <a href="#lj-model"><strong>2. Lennard–Jones 模型</strong><span>势函数、截断、原始文献与约化单位换算</span></a>
+        <a href="#project-workflow"><strong>3. 本项目的数据链路</strong><span>输入文件、运行阶段、输出文件和分析方法</span></a>
+      </nav>
+
+      <section id="md-lammps">
+        <h2>1. 分子动力学模拟与 LAMMPS 基础</h2>
+        <p>经典分子动力学（Molecular Dynamics, MD）把原子或粗粒化粒子视为遵循经典力学的质点。给定粒子间势能后，程序计算每个粒子的力，并用很小的时间步反复积分牛顿方程，从而得到位置和速度随时间变化的轨迹。</p>
+        <div class="formula">mᵢ d²rᵢ/dt² = Fᵢ = −∇ᵢU(r₁, r₂, …)</div>
+        <ol class="steps">
+          <li><strong>定义模型：</strong>选择粒子、相互作用势、模拟盒和边界条件。</li>
+          <li><strong>建立初态：</strong>生成坐标，指定温度对应的初速度，避免粒子严重重叠。</li>
+          <li><strong>平衡体系：</strong>用恒温器或恒压器，使温度、密度等达到目标状态。</li>
+          <li><strong>生产模拟：</strong>固定实验协议，连续输出热力学量和粒子轨迹。</li>
+          <li><strong>统计分析：</strong>由轨迹计算 MSD、扩散系数、分布函数及不确定度。</li>
+        </ol>
+        <h3>常见系综</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>系综</th><th>保持或控制的量</th><th>本实验中的用途</th></tr></thead>
+            <tbody>
+              <tr><td>NVE</td><td>粒子数、体积、总能量</td><td>检查无恒温器时的能量守恒</td></tr>
+              <tr><td>NVT</td><td>粒子数、体积、温度</td><td>固定盒体积后测量轨迹和 MSD</td></tr>
+              <tr><td>NPT</td><td>粒子数、压强、温度</td><td>让盒体积调整到目标压强对应的平衡密度</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>LAMMPS</strong> 是 Large-scale Atomic/Molecular Massively Parallel Simulator 的缩写。它是开源的经典分子动力学引擎：读取文本输入脚本，建立粒子体系、计算作用力、积分运动方程并输出轨迹。LAMMPS 负责可靠地执行模拟；研究问题、参数选择、平衡判据和数据解释仍由使用者负责。</p>
+        <div class="callout"><strong>先记住：</strong>一条轨迹只是一次带有限粒子数、有限时间和特定随机初态的数值实验。模拟“成功运行”不等于结论已经收敛。</div>
+        <h3>建议先读</h3>
+        <ul class="sources">
+          <li><a href="https://docs.lammps.org/Intro_overview.html" target="_blank" rel="noreferrer">LAMMPS 官方概览</a>：LAMMPS 能模拟什么，以及它如何积分粒子运动。</li>
+          <li><a href="https://docs.lammps.org/Commands_structure.html" target="_blank" rel="noreferrer">LAMMPS 输入脚本结构</a>：初始化、体系定义、设置、运行四个基本部分。</li>
+          <li>A. Rahman, “Correlations in the Motion of Atoms in Liquid Argon,” <em>Physical Review</em> 136, A405–A411 (1964), <a href="https://doi.org/10.1103/PhysRev.136.A405" target="_blank" rel="noreferrer">DOI: 10.1103/PhysRev.136.A405</a>。这是用 Lennard–Jones 势研究液氩动力学和自扩散的经典早期工作。</li>
+          <li>S. Plimpton, “Fast Parallel Algorithms for Short-Range Molecular Dynamics,” <em>Journal of Computational Physics</em> 117, 1–19 (1995), <a href="https://doi.org/10.1006/jcph.1995.1039" target="_blank" rel="noreferrer">DOI: 10.1006/jcph.1995.1039</a>。该文介绍了 LAMMPS 所基于的短程 MD 并行算法。</li>
+        </ul>
+      </section>
+
+      <section id="lj-model">
+        <h2>2. 本实验的 Lennard–Jones 模型</h2>
+        <p>本实验使用单组分、三维 Lennard–Jones（LJ）粒子。任意两个粒子之间只通过距离 <em>r</em> 决定相互作用：</p>
+        <div class="formula">U(r) = 4ε[(σ/r)¹² − (σ/r)⁶]</div>
+        <ul>
+          <li><strong>σ：</strong>长度尺度；当 r=σ 时势能为零。</li>
+          <li><strong>ε：</strong>能量尺度；势阱最低点为 −ε。</li>
+          <li><strong>r⁻¹²：</strong>描述短距离强排斥。</li>
+          <li><strong>r⁻⁶：</strong>描述较长距离的吸引。</li>
+          <li><strong>r<sub>min</sub>=2<sup>1/6</sup>σ：</strong>势能最低、作用力为零的位置。</li>
+        </ul>
+        <p>LAMMPS 中使用 <code>pair_style lj/cut 2.5</code>，即在 r<sub>c</sub>=2.5σ 处截断；<code>pair_modify shift yes</code> 将势能整体平移，使 U(r<sub>c</sub>)=0。截断模型和无限程 LJ 势并不完全相同，比较文献时必须确认其势函数、截断半径和尾修正。</p>
+        <h3>LJ 约化单位</h3>
+        <p>在 <code>units lj</code> 中取 σ=ε=m=k<sub>B</sub>=1。模拟输出没有预设的米、秒或帕；需要选择一种真实物质的 σ、ε、m 才能换算。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>物理量</th><th>约化量</th><th>恢复实际单位</th></tr></thead>
+            <tbody>
+              <tr><td>长度</td><td>r*=r/σ</td><td>r=r*σ</td></tr>
+              <tr><td>温度</td><td>T*=k<sub>B</sub>T/ε</td><td>T=T*ε/k<sub>B</sub></td></tr>
+              <tr><td>时间</td><td>t*=t/[σ√(m/ε)]</td><td>t=t*σ√(m/ε)</td></tr>
+              <tr><td>压强</td><td>P*=Pσ³/ε</td><td>P=P*ε/σ³</td></tr>
+              <tr><td>速度</td><td>v*=v/√(ε/m)</td><td>v=v*√(ε/m)</td></tr>
+              <tr><td>扩散系数</td><td>D*=D/[σ√(ε/m)]</td><td>D=D*σ√(ε/m)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>氩参数换算示例</h3>
+        <p>若取 σ=3.405 Å、ε/k<sub>B</sub>=119.8 K、m=39.948 u，则时间单位约为 2.156 ps，扩散系数单位约为 5.377×10⁻⁸ m²/s。因此 T*=2 对应约 239.6 K，100 t* 对应约 215.6 ps；P*=0.30 算例的 D*=1.662 对应约 8.94×10⁻⁸ m²/s。</p>
+        <div class="callout"><span class="task">建议任务：</span>从原始论文或可信数据手册查找另一种稀有气体的 σ、ε/k<sub>B</sub> 和原子质量，独立完成时间、压强、速度与扩散系数的 SI 换算，并说明这种映射的局限。</div>
+        <h3>原始文献与官方说明</h3>
+        <ul class="sources">
+          <li>J. E. Jones, “On the Determination of Molecular Fields.—II. From the Equation of State of a Gas,” <em>Proceedings of the Royal Society A</em> 106, 463–477 (1924), <a href="https://doi.org/10.1098/rspa.1924.0082" target="_blank" rel="noreferrer">DOI: 10.1098/rspa.1924.0082</a>。</li>
+          <li><a href="https://docs.lammps.org/pair_lj.html" target="_blank" rel="noreferrer">LAMMPS: pair_style lj/cut</a>：12-6 势、截断半径和参数定义。</li>
+          <li><a href="https://docs.lammps.org/units.html" target="_blank" rel="noreferrer">LAMMPS: units 命令</a>：LJ 约化单位的官方定义。</li>
+          <li>Rahman (1964) 的<a href="https://doi.org/10.1103/PhysRev.136.A405" target="_blank" rel="noreferrer">液氩 MD 原始论文</a>：阅读其体系大小、势函数、温度、密度和扩散系数处理方式。</li>
+        </ul>
+      </section>
+
+      <section id="project-workflow">
+        <h2>3. LAMMPS 如何生成本项目的数据</h2>
+        <p>本项目把“用于计算扩散系数的数据”和“用于课堂三维展示的数据”分开生成。两者先进行相同的周期边界 NPT 平衡，但生产阶段的边界条件不同。</p>
+        <h3>输入文件与驱动脚本</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>文件</th><th>作用</th></tr></thead>
+            <tbody>
+              <tr><td><code>lammps/in.lj_diffusion_pressure</code></td><td>周期边界长轨迹：NPT 平衡后固定体积做 0–500 t* 的 NVT，用于 MSD 和 D–P 分析。</td></tr>
+              <tr><td><code>lammps/in.lj_diffusion_pressure_reflective_preview</code></td><td>反射墙短轨迹：NPT 平衡后切换六面反射墙，做 0–100 t* 的 NVT，用于动画。</td></tr>
+              <tr><td><code>scripts/run_pressure_diffusion.py</code></td><td>依次运行五个目标压强的长轨迹。</td></tr>
+              <tr><td><code>scripts/run_pressure_diffusion_preview.py</code></td><td>依次运行五个目标压强的反射墙预览轨迹。</td></tr>
+              <tr><td><code>scripts/analyze_pressure_diffusion.py</code></td><td>由 thermo.csv 和 msd.csv 拟合扩散系数与压强关系。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>输入脚本中的关键命令</h3>
+        <pre><code>units lj                    # 使用 LJ 约化单位
+pair_style lj/cut 2.5      # 12-6 LJ 势，截断半径 2.5σ
+fix ... npt                # 调整盒体积，达到目标 T* 和 P*
+fix ... nvt                # 固定体积并控制温度
+compute ... msd            # 计算均方位移
+dump ... custom            # 输出坐标、未折返坐标和速度
+fix ... wall/reflect       # 预览轨迹中的六面反射墙</code></pre>
+        <h3>一次压力算例的运行顺序</h3>
+        <ol class="steps">
+          <li>按照初始密度生成 500 个 FCC 格点粒子，并从 Maxwell 分布抽取初速度。</li>
+          <li>运行 30,000 步 NPT，使体积和密度适应目标压强。</li>
+          <li>冻结平衡后的盒体积，并根据粒子的 x 坐标赋予左右示踪标签。</li>
+          <li>长轨迹保持周期边界运行 100,000 步；预览轨迹切换反射墙运行 20,000 步。</li>
+          <li>输出热力学量、MSD、轨迹和最终构型，再由独立脚本生成汇总表和图。</li>
+        </ol>
+        <h3>输出文件怎样使用</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>输出</th><th>主要字段</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td><code>thermo.csv</code></td><td>step, time, temp, pressure, density, volume</td><td>检查平衡、计算平均状态和压强涨落。</td></tr>
+              <tr><td><code>msd.csv</code></td><td>step, time, msd</td><td>拟合 MSD 斜率，由 D*=(1/6)d(MSD*)/dt* 得到扩散系数。</td></tr>
+              <tr><td><code>trajectory.lammpstrj</code></td><td>id, type, x/y/z, xu/yu/zu, vx/vy/vz</td><td>三维显示、混合度、速率分布，以及用未折返坐标复算位移。</td></tr>
+              <tr><td><code>summary.json</code></td><td>平均状态、拟合区间、D*、R²、换算因子</td><td>程序读取的机器可读分析摘要。</td></tr>
+              <tr><td><code>diffusion_vs_pressure.csv</code></td><td>mean_pressure, diffusion_lj 等</td><td>绘制 D–P、D–1/P 和对数关系。</td></tr>
+              <tr><td><code>msd_theory_curves.csv</code></td><td>实际 MSD、6D*t、拟合窗标记</td><td>比较模拟曲线与 Einstein 扩散模型。</td></tr>
+              <tr><td><code>speed_distribution.csv</code></td><td>速率分箱、实测密度、Maxwell 密度</td><td>检查速度采样是否符合平衡分布。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>从输出到图的核心关系</h3>
+        <div class="formula">D* = (1/6) d(MSD*)/dt*　　·　　v* = √(vx*²+vy*²+vz*²)　　·　　D* ≈ a/P*+b</div>
+        <div class="callout"><span class="task">建议任务：</span>先不看分析页，任选一个压强，仅根据 README 和原始 CSV 独立得到 D*；再与 summary.json 对照，解释拟合窗改变时结果为什么会变化。</div>
+        <h3>对应的 LAMMPS 官方文档</h3>
+        <ul class="sources">
+          <li><a href="https://docs.lammps.org/fix_nh.html" target="_blank" rel="noreferrer">fix nvt / npt</a>：Nosé–Hoover 恒温与恒压积分。</li>
+          <li><a href="https://docs.lammps.org/compute_msd.html" target="_blank" rel="noreferrer">compute msd</a>：LAMMPS 如何计算均方位移。</li>
+          <li><a href="https://docs.lammps.org/dump.html" target="_blank" rel="noreferrer">dump custom</a>：轨迹格式和自定义字段。</li>
+          <li><a href="https://docs.lammps.org/fix_wall_reflect.html" target="_blank" rel="noreferrer">fix wall/reflect</a>：反射墙的数值含义和限制。</li>
+        </ul>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

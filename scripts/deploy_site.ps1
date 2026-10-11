@@ -24,6 +24,7 @@ $pageBuilder = Join-Path $projectRoot 'scripts\build_pressure_diffusion_3d.py'
 $analysisPageBuilder = Join-Path $projectRoot 'scripts\build_pressure_analysis_page.py'
 $page = Join-Path $projectRoot 'visualization\pressure_diffusion.html'
 $analysisPage = Join-Path $projectRoot 'visualization\pressure_analysis.html'
+$learningPage = Join-Path $projectRoot 'visualization\learning.html'
 $archive = Join-Path $projectRoot 'downloads\pressure_diffusion_trajectories.zip'
 $analysisCsv = Join-Path $projectRoot 'results\diffusion_pressure\diffusion_vs_pressure.csv'
 
@@ -38,6 +39,7 @@ foreach ($required in @(
     $pageBuilder,
     $analysisPageBuilder,
     $analysisCsv,
+    $learningPage,
     $KeyPath
 )) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
@@ -65,6 +67,7 @@ New-Item -ItemType Directory -Path $tempRoot, $packageRoot | Out-Null
 
 $remoteIndex = "/tmp/visual-lab-$stamp-index.html"
 $remoteAnalysisPage = "/tmp/visual-lab-$stamp-analysis.html"
+$remoteLearningPage = "/tmp/visual-lab-$stamp-learning.html"
 $remoteArchive = "/tmp/visual-lab-$stamp-trajectories.zip"
 $remoteCsv = "/tmp/visual-lab-$stamp-diffusion.csv"
 $remoteScript = "/tmp/visual-lab-$stamp-deploy.sh"
@@ -158,6 +161,16 @@ function Build-TrajectoryPackage {
         }
     }
 
+    # Normalize archive timestamps so identical data produces an identical ZIP.
+    $fixedPackageTime = [datetime]::SpecifyKind(
+        [datetime]'2026-01-01T00:00:00',
+        [DateTimeKind]::Utc
+    )
+    foreach ($entry in @(Get-ChildItem -LiteralPath $packageRoot -Recurse -Force)) {
+        $entry.LastWriteTimeUtc = $fixedPackageTime
+    }
+    (Get-Item -LiteralPath $packageRoot).LastWriteTimeUtc = $fixedPackageTime
+
     Compress-Archive -Path (Join-Path $packageRoot '*') -DestinationPath $newArchive -CompressionLevel Optimal
     Expand-Archive -LiteralPath $newArchive -DestinationPath $verifyRoot
 
@@ -202,7 +215,10 @@ function Restore-RemoteBackup {
         "cp -p $remoteBackup/diffusion_vs_pressure.csv /var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv && " +
         "if test -f $remoteBackup/analysis-page.existed; then " +
         "cp -p $remoteBackup/pressure_analysis.html /var/www/visual-lab/pressure_analysis.html; " +
-        "else rm -f /var/www/visual-lab/pressure_analysis.html; fi"
+        "else rm -f /var/www/visual-lab/pressure_analysis.html; fi && " +
+        "if test -f $remoteBackup/learning-page.existed; then " +
+        "cp -p $remoteBackup/learning.html /var/www/visual-lab/learning.html; " +
+        "else rm -f /var/www/visual-lab/learning.html; fi"
     Invoke-NativeChecked `
         -Program 'ssh' `
         -Arguments ($sshArgs + @($serverTarget, $restore)) `
@@ -238,6 +254,7 @@ try {
     $localHashes = @{
         $remoteIndex = Get-Sha256 $page
         $remoteAnalysisPage = Get-Sha256 $analysisPage
+        $remoteLearningPage = Get-Sha256 $learningPage
         $remoteArchive = Get-Sha256 $archive
         $remoteCsv = Get-Sha256 $analysisCsv
     }
@@ -248,10 +265,11 @@ try {
         -Arguments ($sshArgs + @($serverTarget, "test ! -e $remoteBackup")) `
         -FailureMessage 'Remote backup path already exists or SSH failed'
 
-    Write-Host '[5/8] Uploading both HTML pages, ZIP, CSV, and deployment script...'
+    Write-Host '[5/8] Uploading site pages, ZIP, CSV, and deployment script...'
     foreach ($item in @(
         @($page, $remoteIndex),
         @($analysisPage, $remoteAnalysisPage),
+        @($learningPage, $remoteLearningPage),
         @($archive, $remoteArchive),
         @($analysisCsv, $remoteCsv)
     )) {
@@ -268,17 +286,20 @@ set -eu
 stamp=$1
 incoming_index=$2
 incoming_analysis=$3
-incoming_archive=$4
-incoming_csv=$5
-health_host=$6
+incoming_learning=$4
+incoming_archive=$5
+incoming_csv=$6
+health_host=$7
 site=/var/www/visual-lab
 backup="/root/visual-lab-backups/deploy-$stamp"
 index="$site/index.html"
 analysis="$site/pressure_analysis.html"
+learning="$site/learning.html"
 archive="$site/downloads/pressure_diffusion_trajectories.zip"
 csv="$site/results/diffusion_pressure/diffusion_vs_pressure.csv"
 index_next="$index.next"
 analysis_next="$analysis.next"
+learning_next="$learning.next"
 archive_next="$archive.next"
 csv_next="$csv.next"
 deployed=0
@@ -295,14 +316,20 @@ restore_and_cleanup() {
         else
             rm -f "$analysis"
         fi
+        if [ -f "$backup/learning-page.existed" ]; then
+            cp -p "$backup/learning.html" "$learning"
+        else
+            rm -f "$learning"
+        fi
     fi
-    rm -f "$index_next" "$analysis_next" "$archive_next" "$csv_next"
+    rm -f "$index_next" "$analysis_next" "$learning_next" "$archive_next" "$csv_next"
     exit "$status"
 }
 trap restore_and_cleanup EXIT HUP INT TERM
 
 test -f "$incoming_index"
 test -f "$incoming_analysis"
+test -f "$incoming_learning"
 test -f "$incoming_archive"
 test -f "$incoming_csv"
 test -f "$index"
@@ -318,21 +345,28 @@ if [ -f "$analysis" ]; then
     cp -p "$analysis" "$backup/pressure_analysis.html"
     touch "$backup/analysis-page.existed"
 fi
+if [ -f "$learning" ]; then
+    cp -p "$learning" "$backup/learning.html"
+    touch "$backup/learning-page.existed"
+fi
 
 install -m 644 "$incoming_index" "$index_next"
 install -m 644 "$incoming_analysis" "$analysis_next"
+install -m 644 "$incoming_learning" "$learning_next"
 install -m 644 "$incoming_archive" "$archive_next"
 install -m 644 "$incoming_csv" "$csv_next"
 
 deployed=1
 mv "$index_next" "$index"
 mv "$analysis_next" "$analysis"
+mv "$learning_next" "$learning"
 mv "$archive_next" "$archive"
 mv "$csv_next" "$csv"
 
 systemctl is-active --quiet nginx
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/'
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/pressure_analysis.html'
+curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/learning.html'
 curl --fail --silent --show-error --output /dev/null --head --header "Host: $health_host" 'http://127.0.0.1/downloads/pressure_diffusion_trajectories.zip'
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/results/diffusion_pressure/diffusion_vs_pressure.csv'
 '@
@@ -350,6 +384,7 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
     $uploadedHashes = Get-RemoteHashes @(
         $remoteIndex,
         $remoteAnalysisPage,
+        $remoteLearningPage,
         $remoteArchive,
         $remoteCsv
     )
@@ -364,7 +399,7 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
         -Program 'ssh' `
         -Arguments ($sshArgs + @(
             $serverTarget,
-            "sh $remoteScript $stamp $remoteIndex $remoteAnalysisPage $remoteArchive $remoteCsv $ServerAddress"
+            "sh $remoteScript $stamp $remoteIndex $remoteAnalysisPage $remoteLearningPage $remoteArchive $remoteCsv $ServerAddress"
         )) `
         -FailureMessage 'Remote deployment failed; server-side rollback was attempted'
     $deploymentApplied = $true
@@ -372,6 +407,7 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
     $livePaths = @(
         '/var/www/visual-lab/index.html',
         '/var/www/visual-lab/pressure_analysis.html',
+        '/var/www/visual-lab/learning.html',
         '/var/www/visual-lab/downloads/pressure_diffusion_trajectories.zip',
         '/var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv'
     )
@@ -379,8 +415,9 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
     foreach ($comparison in @(
         @($livePaths[0], $localHashes[$remoteIndex]),
         @($livePaths[1], $localHashes[$remoteAnalysisPage]),
-        @($livePaths[2], $localHashes[$remoteArchive]),
-        @($livePaths[3], $localHashes[$remoteCsv])
+        @($livePaths[2], $localHashes[$remoteLearningPage]),
+        @($livePaths[3], $localHashes[$remoteArchive]),
+        @($livePaths[4], $localHashes[$remoteCsv])
     )) {
         if (-not $liveHashes.ContainsKey($comparison[0]) -or $liveHashes[$comparison[0]] -ne $comparison[1]) {
             throw "Live SHA-256 mismatch: $($comparison[0])"
@@ -400,6 +437,14 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
             -not $analysisResponse.Content.Contains('均方位移与扩散模型')
         ) {
             throw 'Public analysis page did not return the expected content.'
+        }
+        $learningResponse = Invoke-WebRequest -Uri "$publicBase/learning.html" -TimeoutSec 45
+        if (
+            [int]$learningResponse.StatusCode -ne 200 -or
+            -not $learningResponse.Content.Contains('Lennard–Jones 模型') -or
+            -not $learningResponse.Content.Contains('LAMMPS 如何生成本项目的数据')
+        ) {
+            throw 'Public learning page did not return the expected content.'
         }
 
         Invoke-WebRequest `
@@ -427,12 +472,13 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
     Write-Host '[8/8] Deployment complete.'
     Write-Host "Page: $publicBase/"
     Write-Host "Analysis: $publicBase/pressure_analysis.html"
+    Write-Host "Learning: $publicBase/learning.html"
     Write-Host "ZIP SHA-256: $(Get-Sha256 $archive)"
     Write-Host "CSV SHA-256: $(Get-Sha256 $analysisCsv)"
     Write-Host "Remote backup: $remoteBackup"
 }
 finally {
-    $cleanupCommand = "rm -f -- $remoteIndex $remoteAnalysisPage $remoteArchive $remoteCsv $remoteScript"
+    $cleanupCommand = "rm -f -- $remoteIndex $remoteAnalysisPage $remoteLearningPage $remoteArchive $remoteCsv $remoteScript"
     & ssh @sshArgs $serverTarget $cleanupCommand 2>$null | Out-Null
 
     if (-not $KeepTemporaryFiles -and (Test-Path -LiteralPath $tempRoot)) {
