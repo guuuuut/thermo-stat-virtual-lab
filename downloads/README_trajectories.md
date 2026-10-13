@@ -1,10 +1,12 @@
-<!-- visual-lab-package: pressure-diffusion-v1 -->
-
 # 五组压强 LJ 气体扩散轨迹数据说明
 
 本数据包用于“等温条件下压强与气体扩散”教学实验。体系采用 Lennard–Jones（LJ）约化单位，包含 500 个质量和相互作用完全相同的粒子；粒子类型 1、2 只是示踪标签，分别表示 NVT 生产阶段开始时位于模拟盒左半区和右半区的粒子。
 Lennard-Jones势:
-$$U(r) = 4\epsilon[(\sigma/r)^{12} - (\sigma/r)^{6}]$$
+
+$$
+U(r) = 4\epsilon[(\sigma/r)^{12} - (\sigma/r)^{6}]
+$$
+
 其中：
 $r^{-12}$ 表示近距离强排斥；
 $r^{-6}$ 表示较远距离的吸引；
