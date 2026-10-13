@@ -25,6 +25,10 @@ $analysisPageBuilder = Join-Path $projectRoot 'scripts\build_pressure_analysis_p
 $page = Join-Path $projectRoot 'visualization\pressure_diffusion.html'
 $analysisPage = Join-Path $projectRoot 'visualization\pressure_analysis.html'
 $learningPage = Join-Path $projectRoot 'visualization\learning.html'
+$mainPageMarker = '<meta name="visual-lab-page" content="pressure-diffusion-v1">'
+$analysisPageMarker = '<meta name="visual-lab-page" content="pressure-analysis-v1">'
+$learningPageMarker = '<meta name="visual-lab-page" content="learning-guide-v1">'
+$packageReadmeMarker = '<!-- visual-lab-package: pressure-diffusion-v1 -->'
 $archive = Join-Path $projectRoot 'downloads\pressure_diffusion_trajectories.zip'
 $analysisCsv = Join-Path $projectRoot 'results\diffusion_pressure\diffusion_vs_pressure.csv'
 
@@ -45,6 +49,11 @@ foreach ($required in @(
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
         throw "Required file not found: $required"
     }
+}
+
+$learningSource = [IO.File]::ReadAllText($learningPage, [Text.Encoding]::UTF8)
+if (-not $learningSource.Contains($learningPageMarker)) {
+    throw "Learning page marker is missing: $learningPageMarker"
 }
 
 $publicUri = [uri]$PublicBaseUrl
@@ -179,7 +188,7 @@ function Build-TrajectoryPackage {
         throw "Trajectory package must contain 29 files; found $($packageFiles.Count)."
     }
     $readme = [IO.File]::ReadAllText((Join-Path $verifyRoot 'README.md'), $utf8)
-    if (-not $readme.Contains('五组压强 LJ 气体扩散轨迹数据说明')) {
+    if (-not $readme.Contains($packageReadmeMarker)) {
         throw 'The packaged README is missing the expected Chinese heading.'
     }
     $packagedCode = @(
@@ -246,6 +255,17 @@ try {
     }
     if (-not (Test-Path -LiteralPath $analysisPage -PathType Leaf)) {
         throw "Analysis-page output missing: $analysisPage"
+    }
+    $pageMarkers = @{
+        $page = $mainPageMarker
+        $analysisPage = $analysisPageMarker
+        $learningPage = $learningPageMarker
+    }
+    foreach ($entry in $pageMarkers.GetEnumerator()) {
+        $pageSource = [IO.File]::ReadAllText($entry.Key, [Text.Encoding]::UTF8)
+        if (-not $pageSource.Contains($entry.Value)) {
+            throw "Page marker is missing from $($entry.Key): $($entry.Value)"
+        }
     }
 
     Write-Host '[3/8] Rebuilding and validating trajectory package...'
@@ -426,28 +446,27 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
 
     Write-Host '[7/8] Verifying public pages and downloads...'
     try {
-        $pageResponse = Invoke-WebRequest -Uri "$publicBase/" -TimeoutSec 45
-        if ([int]$pageResponse.StatusCode -ne 200 -or -not $pageResponse.Content.Contains('六面反射墙')) {
+        $pageResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/" -TimeoutSec 45
+        if ([int]$pageResponse.StatusCode -ne 200 -or -not $pageResponse.Content.Contains($mainPageMarker)) {
             throw 'Public page did not return the expected visualization.'
         }
-        $analysisResponse = Invoke-WebRequest -Uri "$publicBase/pressure_analysis.html" -TimeoutSec 45
+        $analysisResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/pressure_analysis.html" -TimeoutSec 45
         if (
             [int]$analysisResponse.StatusCode -ne 200 -or
-            -not $analysisResponse.Content.Contains('Maxwell 理论') -or
-            -not $analysisResponse.Content.Contains('均方位移与扩散模型')
+            -not $analysisResponse.Content.Contains($analysisPageMarker)
         ) {
             throw 'Public analysis page did not return the expected content.'
         }
-        $learningResponse = Invoke-WebRequest -Uri "$publicBase/learning.html" -TimeoutSec 45
+        $learningResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/learning.html" -TimeoutSec 45
         if (
             [int]$learningResponse.StatusCode -ne 200 -or
-            -not $learningResponse.Content.Contains('Lennard–Jones 模型') -or
-            -not $learningResponse.Content.Contains('LAMMPS 如何生成本项目的数据')
+            -not $learningResponse.Content.Contains($learningPageMarker)
         ) {
             throw 'Public learning page did not return the expected content.'
         }
 
         Invoke-WebRequest `
+            -UseBasicParsing `
             -Uri "$publicBase/downloads/pressure_diffusion_trajectories.zip" `
             -OutFile $publicArchive `
             -TimeoutSec 180
@@ -456,6 +475,7 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
         }
 
         Invoke-WebRequest `
+            -UseBasicParsing `
             -Uri "$publicBase/results/diffusion_pressure/diffusion_vs_pressure.csv" `
             -OutFile $publicCsv `
             -TimeoutSec 60
