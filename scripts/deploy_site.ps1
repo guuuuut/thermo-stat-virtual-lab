@@ -19,18 +19,13 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $cacheRoot = Join-Path $projectRoot '.cache'
 $python = Join-Path $projectRoot '.venv\Scripts\python.exe'
-$analysisGenerator = Join-Path $projectRoot 'scripts\generate_pressure_analysis.py'
 $pageBuilder = Join-Path $projectRoot 'scripts\build_pressure_diffusion_3d.py'
-$analysisPageBuilder = Join-Path $projectRoot 'scripts\build_pressure_analysis_page.py'
 $page = Join-Path $projectRoot 'visualization\pressure_diffusion.html'
-$analysisPage = Join-Path $projectRoot 'visualization\pressure_analysis.html'
 $learningPage = Join-Path $projectRoot 'visualization\learning.html'
 $mainPageMarker = '<meta name="visual-lab-page" content="pressure-diffusion-v1">'
-$analysisPageMarker = '<meta name="visual-lab-page" content="pressure-analysis-v1">'
 $learningPageMarker = '<meta name="visual-lab-page" content="learning-guide-v1">'
 $packageReadmeMarker = '<!-- visual-lab-package: pressure-diffusion-v1 -->'
 $archive = Join-Path $projectRoot 'downloads\pressure_diffusion_trajectories.zip'
-$analysisCsv = Join-Path $projectRoot 'results\diffusion_pressure\diffusion_vs_pressure.csv'
 
 if (-not $KeyPath) {
     $KeyPath = Join-Path $projectRoot 'secrets\aliyun-lighthouse-rsa-20260923'
@@ -39,10 +34,7 @@ $KeyPath = [IO.Path]::GetFullPath($KeyPath)
 
 foreach ($required in @(
     $python,
-    $analysisGenerator,
     $pageBuilder,
-    $analysisPageBuilder,
-    $analysisCsv,
     $learningPage,
     $KeyPath
 )) {
@@ -71,14 +63,11 @@ $verifyRoot = Join-Path $tempRoot 'verify'
 $newArchive = Join-Path $tempRoot 'pressure_diffusion_trajectories.zip'
 $remoteScriptLocal = Join-Path $tempRoot 'deploy-site.sh'
 $publicArchive = Join-Path $tempRoot 'public-archive.zip'
-$publicCsv = Join-Path $tempRoot 'public-diffusion.csv'
 New-Item -ItemType Directory -Path $tempRoot, $packageRoot | Out-Null
 
 $remoteIndex = "/tmp/visual-lab-$stamp-index.html"
-$remoteAnalysisPage = "/tmp/visual-lab-$stamp-analysis.html"
 $remoteLearningPage = "/tmp/visual-lab-$stamp-learning.html"
 $remoteArchive = "/tmp/visual-lab-$stamp-trajectories.zip"
-$remoteCsv = "/tmp/visual-lab-$stamp-diffusion.csv"
 $remoteScript = "/tmp/visual-lab-$stamp-deploy.sh"
 $remoteBackup = "/root/visual-lab-backups/deploy-$stamp"
 $deploymentApplied = $false
@@ -141,13 +130,7 @@ function Build-TrajectoryPackage {
         (Join-Path $projectRoot 'results\diffusion_pressure_preview\run_manifest.json') `
         (Join-Path $previewRoot 'run_manifest.json')
 
-    foreach ($name in @(
-        'run_manifest.json',
-        'summary.json',
-        'diffusion_vs_pressure.csv',
-        'msd_theory_curves.csv',
-        'speed_distribution.csv'
-    )) {
+    foreach ($name in @('run_manifest.json')) {
         Copy-RequiredFile `
             (Join-Path $projectRoot "results\diffusion_pressure\$name") `
             (Join-Path $analysisRoot $name)
@@ -184,12 +167,12 @@ function Build-TrajectoryPackage {
     Expand-Archive -LiteralPath $newArchive -DestinationPath $verifyRoot
 
     $packageFiles = Get-ChildItem -LiteralPath $verifyRoot -Recurse -File
-    if ($packageFiles.Count -ne 29) {
-        throw "Trajectory package must contain 29 files; found $($packageFiles.Count)."
+    if ($packageFiles.Count -ne 25) {
+        throw "Trajectory package must contain 25 files; found $($packageFiles.Count)."
     }
     $readme = [IO.File]::ReadAllText((Join-Path $verifyRoot 'README.md'), $utf8)
     if (-not $readme.Contains($packageReadmeMarker)) {
-        throw 'The packaged README is missing the expected Chinese heading.'
+        throw "The packaged README is missing its stable marker: $packageReadmeMarker"
     }
     $packagedCode = @(
         Get-ChildItem -LiteralPath $verifyRoot -Recurse -File -Filter '*.py'
@@ -221,10 +204,12 @@ function Restore-RemoteBackup {
     Write-Warning "Public verification failed; restoring $remoteBackup"
     $restore = "cp -p $remoteBackup/index.html /var/www/visual-lab/index.html && " +
         "cp -p $remoteBackup/pressure_diffusion_trajectories.zip /var/www/visual-lab/downloads/pressure_diffusion_trajectories.zip && " +
-        "cp -p $remoteBackup/diffusion_vs_pressure.csv /var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv && " +
-        "if test -f $remoteBackup/analysis-page.existed; then " +
+        "if test -f $remoteBackup/retired-analysis.existed; then " +
         "cp -p $remoteBackup/pressure_analysis.html /var/www/visual-lab/pressure_analysis.html; " +
         "else rm -f /var/www/visual-lab/pressure_analysis.html; fi && " +
+        "if test -f $remoteBackup/retired-csv.existed; then " +
+        "cp -p $remoteBackup/diffusion_vs_pressure.csv /var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv; " +
+        "else rm -f /var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv; fi && " +
         "if test -f $remoteBackup/learning-page.existed; then " +
         "cp -p $remoteBackup/learning.html /var/www/visual-lab/learning.html; " +
         "else rm -f /var/www/visual-lab/learning.html; fi"
@@ -235,30 +220,16 @@ function Restore-RemoteBackup {
 }
 
 try {
-    Write-Host '[1/8] Generating MSD, diffusion, and speed-distribution analyses...'
-    Invoke-NativeChecked `
-        -Program $python `
-        -Arguments @($analysisGenerator) `
-        -FailureMessage 'Pressure analysis generation failed'
-
-    Write-Host '[2/8] Building visualization and analysis HTML pages...'
+    Write-Host '[1/7] Building visualization HTML page...'
     Invoke-NativeChecked `
         -Program $python `
         -Arguments @($pageBuilder) `
         -FailureMessage 'Visualization build failed'
-    Invoke-NativeChecked `
-        -Program $python `
-        -Arguments @($analysisPageBuilder) `
-        -FailureMessage 'Analysis-page build failed'
     if (-not (Test-Path -LiteralPath $page -PathType Leaf)) {
         throw "Visualization output missing: $page"
     }
-    if (-not (Test-Path -LiteralPath $analysisPage -PathType Leaf)) {
-        throw "Analysis-page output missing: $analysisPage"
-    }
     $pageMarkers = @{
         $page = $mainPageMarker
-        $analysisPage = $analysisPageMarker
         $learningPage = $learningPageMarker
     }
     foreach ($entry in $pageMarkers.GetEnumerator()) {
@@ -268,30 +239,26 @@ try {
         }
     }
 
-    Write-Host '[3/8] Rebuilding and validating trajectory package...'
+    Write-Host '[2/7] Rebuilding student trajectory package...'
     Build-TrajectoryPackage
 
     $localHashes = @{
         $remoteIndex = Get-Sha256 $page
-        $remoteAnalysisPage = Get-Sha256 $analysisPage
         $remoteLearningPage = Get-Sha256 $learningPage
         $remoteArchive = Get-Sha256 $archive
-        $remoteCsv = Get-Sha256 $analysisCsv
     }
 
-    Write-Host '[4/8] Checking SSH connectivity and remote targets...'
+    Write-Host '[3/7] Checking SSH connectivity and remote targets...'
     Invoke-NativeChecked `
         -Program 'ssh' `
         -Arguments ($sshArgs + @($serverTarget, "test ! -e $remoteBackup")) `
         -FailureMessage 'Remote backup path already exists or SSH failed'
 
-    Write-Host '[5/8] Uploading site pages, ZIP, CSV, and deployment script...'
+    Write-Host '[4/7] Uploading site pages, ZIP, and deployment script...'
     foreach ($item in @(
         @($page, $remoteIndex),
-        @($analysisPage, $remoteAnalysisPage),
         @($learningPage, $remoteLearningPage),
-        @($archive, $remoteArchive),
-        @($analysisCsv, $remoteCsv)
+        @($archive, $remoteArchive)
     )) {
         Invoke-NativeChecked `
             -Program 'scp' `
@@ -305,23 +272,19 @@ set -eu
 
 stamp=$1
 incoming_index=$2
-incoming_analysis=$3
-incoming_learning=$4
-incoming_archive=$5
-incoming_csv=$6
-health_host=$7
+incoming_learning=$3
+incoming_archive=$4
+health_host=$5
 site=/var/www/visual-lab
 backup="/root/visual-lab-backups/deploy-$stamp"
 index="$site/index.html"
-analysis="$site/pressure_analysis.html"
 learning="$site/learning.html"
 archive="$site/downloads/pressure_diffusion_trajectories.zip"
-csv="$site/results/diffusion_pressure/diffusion_vs_pressure.csv"
+retired_analysis="$site/pressure_analysis.html"
+retired_csv="$site/results/diffusion_pressure/diffusion_vs_pressure.csv"
 index_next="$index.next"
-analysis_next="$analysis.next"
 learning_next="$learning.next"
 archive_next="$archive.next"
-csv_next="$csv.next"
 deployed=0
 
 restore_and_cleanup() {
@@ -330,11 +293,15 @@ restore_and_cleanup() {
     if [ "$status" -ne 0 ] && [ "$deployed" -eq 1 ]; then
         cp -p "$backup/index.html" "$index"
         cp -p "$backup/pressure_diffusion_trajectories.zip" "$archive"
-        cp -p "$backup/diffusion_vs_pressure.csv" "$csv"
-        if [ -f "$backup/analysis-page.existed" ]; then
-            cp -p "$backup/pressure_analysis.html" "$analysis"
+        if [ -f "$backup/retired-analysis.existed" ]; then
+            cp -p "$backup/pressure_analysis.html" "$retired_analysis"
         else
-            rm -f "$analysis"
+            rm -f "$retired_analysis"
+        fi
+        if [ -f "$backup/retired-csv.existed" ]; then
+            cp -p "$backup/diffusion_vs_pressure.csv" "$retired_csv"
+        else
+            rm -f "$retired_csv"
         fi
         if [ -f "$backup/learning-page.existed" ]; then
             cp -p "$backup/learning.html" "$learning"
@@ -342,28 +309,28 @@ restore_and_cleanup() {
             rm -f "$learning"
         fi
     fi
-    rm -f "$index_next" "$analysis_next" "$learning_next" "$archive_next" "$csv_next"
+    rm -f "$index_next" "$learning_next" "$archive_next"
     exit "$status"
 }
 trap restore_and_cleanup EXIT HUP INT TERM
 
 test -f "$incoming_index"
-test -f "$incoming_analysis"
 test -f "$incoming_learning"
 test -f "$incoming_archive"
-test -f "$incoming_csv"
 test -f "$index"
 test -f "$archive"
-test -f "$csv"
 test ! -e "$backup"
 
 install -d -m 700 "$backup"
 cp -p "$index" "$backup/index.html"
 cp -p "$archive" "$backup/pressure_diffusion_trajectories.zip"
-cp -p "$csv" "$backup/diffusion_vs_pressure.csv"
-if [ -f "$analysis" ]; then
-    cp -p "$analysis" "$backup/pressure_analysis.html"
-    touch "$backup/analysis-page.existed"
+if [ -f "$retired_analysis" ]; then
+    cp -p "$retired_analysis" "$backup/pressure_analysis.html"
+    touch "$backup/retired-analysis.existed"
+fi
+if [ -f "$retired_csv" ]; then
+    cp -p "$retired_csv" "$backup/diffusion_vs_pressure.csv"
+    touch "$backup/retired-csv.existed"
 fi
 if [ -f "$learning" ]; then
     cp -p "$learning" "$backup/learning.html"
@@ -371,24 +338,21 @@ if [ -f "$learning" ]; then
 fi
 
 install -m 644 "$incoming_index" "$index_next"
-install -m 644 "$incoming_analysis" "$analysis_next"
 install -m 644 "$incoming_learning" "$learning_next"
 install -m 644 "$incoming_archive" "$archive_next"
-install -m 644 "$incoming_csv" "$csv_next"
 
 deployed=1
 mv "$index_next" "$index"
-mv "$analysis_next" "$analysis"
 mv "$learning_next" "$learning"
 mv "$archive_next" "$archive"
-mv "$csv_next" "$csv"
+rm -f "$retired_analysis" "$retired_csv"
 
 systemctl is-active --quiet nginx
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/'
-curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/pressure_analysis.html'
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/learning.html'
 curl --fail --silent --show-error --output /dev/null --head --header "Host: $health_host" 'http://127.0.0.1/downloads/pressure_diffusion_trajectories.zip'
-curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/results/diffusion_pressure/diffusion_vs_pressure.csv'
+test ! -e "$retired_analysis"
+test ! -e "$retired_csv"
 '@
     $remoteDeployContent = $remoteDeployContent.Replace("`r`n", "`n")
     [IO.File]::WriteAllText(
@@ -403,10 +367,8 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
 
     $uploadedHashes = Get-RemoteHashes @(
         $remoteIndex,
-        $remoteAnalysisPage,
         $remoteLearningPage,
-        $remoteArchive,
-        $remoteCsv
+        $remoteArchive
     )
     foreach ($path in $localHashes.Keys) {
         if (-not $uploadedHashes.ContainsKey($path) -or $uploadedHashes[$path] -ne $localHashes[$path]) {
@@ -414,48 +376,37 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
         }
     }
 
-    Write-Host '[6/8] Creating backups and switching files atomically...'
+    Write-Host '[5/7] Creating backups, switching files, and retiring analysis results...'
     Invoke-NativeChecked `
         -Program 'ssh' `
         -Arguments ($sshArgs + @(
             $serverTarget,
-            "sh $remoteScript $stamp $remoteIndex $remoteAnalysisPage $remoteLearningPage $remoteArchive $remoteCsv $ServerAddress"
+            "sh $remoteScript $stamp $remoteIndex $remoteLearningPage $remoteArchive $ServerAddress"
         )) `
         -FailureMessage 'Remote deployment failed; server-side rollback was attempted'
     $deploymentApplied = $true
 
     $livePaths = @(
         '/var/www/visual-lab/index.html',
-        '/var/www/visual-lab/pressure_analysis.html',
         '/var/www/visual-lab/learning.html',
-        '/var/www/visual-lab/downloads/pressure_diffusion_trajectories.zip',
-        '/var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv'
+        '/var/www/visual-lab/downloads/pressure_diffusion_trajectories.zip'
     )
     $liveHashes = Get-RemoteHashes $livePaths
     foreach ($comparison in @(
         @($livePaths[0], $localHashes[$remoteIndex]),
-        @($livePaths[1], $localHashes[$remoteAnalysisPage]),
-        @($livePaths[2], $localHashes[$remoteLearningPage]),
-        @($livePaths[3], $localHashes[$remoteArchive]),
-        @($livePaths[4], $localHashes[$remoteCsv])
+        @($livePaths[1], $localHashes[$remoteLearningPage]),
+        @($livePaths[2], $localHashes[$remoteArchive])
     )) {
         if (-not $liveHashes.ContainsKey($comparison[0]) -or $liveHashes[$comparison[0]] -ne $comparison[1]) {
             throw "Live SHA-256 mismatch: $($comparison[0])"
         }
     }
 
-    Write-Host '[7/8] Verifying public pages and downloads...'
+    Write-Host '[6/7] Verifying public pages and student download...'
     try {
         $pageResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/" -TimeoutSec 45
         if ([int]$pageResponse.StatusCode -ne 200 -or -not $pageResponse.Content.Contains($mainPageMarker)) {
             throw 'Public page did not return the expected visualization.'
-        }
-        $analysisResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/pressure_analysis.html" -TimeoutSec 45
-        if (
-            [int]$analysisResponse.StatusCode -ne 200 -or
-            -not $analysisResponse.Content.Contains($analysisPageMarker)
-        ) {
-            throw 'Public analysis page did not return the expected content.'
         }
         $learningResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/learning.html" -TimeoutSec 45
         if (
@@ -473,15 +424,6 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
         if ((Get-Sha256 $publicArchive) -ne (Get-Sha256 $archive)) {
             throw 'Public trajectory ZIP SHA-256 mismatch.'
         }
-
-        Invoke-WebRequest `
-            -UseBasicParsing `
-            -Uri "$publicBase/results/diffusion_pressure/diffusion_vs_pressure.csv" `
-            -OutFile $publicCsv `
-            -TimeoutSec 60
-        if ((Get-Sha256 $publicCsv) -ne (Get-Sha256 $analysisCsv)) {
-            throw 'Public CSV SHA-256 mismatch.'
-        }
     }
     catch {
         Restore-RemoteBackup
@@ -489,16 +431,14 @@ curl --fail --silent --show-error --output /dev/null --header "Host: $health_hos
         throw
     }
 
-    Write-Host '[8/8] Deployment complete.'
+    Write-Host '[7/7] Deployment complete.'
     Write-Host "Page: $publicBase/"
-    Write-Host "Analysis: $publicBase/pressure_analysis.html"
     Write-Host "Learning: $publicBase/learning.html"
     Write-Host "ZIP SHA-256: $(Get-Sha256 $archive)"
-    Write-Host "CSV SHA-256: $(Get-Sha256 $analysisCsv)"
     Write-Host "Remote backup: $remoteBackup"
 }
 finally {
-    $cleanupCommand = "rm -f -- $remoteIndex $remoteAnalysisPage $remoteLearningPage $remoteArchive $remoteCsv $remoteScript"
+    $cleanupCommand = "rm -f -- $remoteIndex $remoteLearningPage $remoteArchive $remoteScript"
     & ssh @sshArgs $serverTarget $cleanupCommand 2>$null | Out-Null
 
     if (-not $KeepTemporaryFiles -and (Test-Path -LiteralPath $tempRoot)) {

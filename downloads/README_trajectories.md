@@ -1,3 +1,5 @@
+<!-- visual-lab-package: pressure-diffusion-v1 -->
+
 # 五组压强 LJ 气体扩散轨迹数据说明
 
 本数据包用于“等温条件下压强与气体扩散”教学实验。体系采用 Lennard–Jones（LJ）约化单位，包含 500 个质量和相互作用完全相同的粒子；粒子类型 1、2 只是示踪标签，分别表示 NVT 生产阶段开始时位于模拟盒左半区和右半区的粒子。
@@ -29,12 +31,8 @@ pressure_diffusion_trajectories/
 │  ├─ run_manifest.json              预览模拟参数
 │  └─ p_0p10 ... p_0p50/
 │     └─ trajectory.lammpstrj        每个压强一条反射墙轨迹
-├─ analysis/                         扩散系数分析使用的长轨迹和表格
-│  ├─ run_manifest.json              分析模拟参数
-│  ├─ summary.json                   拟合结果与氩参数换算
-│  ├─ diffusion_vs_pressure.csv      五个压强的扩散系数汇总
-│  ├─ msd_theory_curves.csv          实际 MSD 与 Einstein 模型曲线数据
-│  ├─ speed_distribution.csv         实际速率直方图与 Maxwell 理论数据
+├─ analysis/                         留给学生分析的周期边界长轨迹与基础输出
+│  ├─ run_manifest.json              模拟参数，不含拟合结果
 │  └─ p_0p10 ... p_0p50/
 │     ├─ trajectory.lammpstrj        每个压强一条周期边界长轨迹
 │     ├─ msd.csv                     均方位移时间序列
@@ -79,9 +77,9 @@ id type x y z xu yu zu vx vy vz
 
 1. **查看三维轨迹**：在 OVITO 中直接打开 .lammpstrj；用 type 给两类粒子着色，播放轨迹即可观察混合或反弹。
 2. **研究混合动力学**：沿 x 方向分箱，统计每个分箱中两类粒子数，计算混合度随时间的变化。
-3. **研究扩散与压强**：读取 analysis/diffusion_vs_pressure.csv，绘制 D*–P*、D*–1/P* 或 log D*–log P*。
-4. **重新计算扩散系数**：使用 analysis/*/msd.csv，在线性时间窗内拟合 MSD 斜率，并用三维关系 D* = slope/6。
-5. **比较理论曲线**：analysis/msd_theory_curves.csv 已对齐实际 MSD 与 6D*t；analysis/speed_distribution.csv 已对齐实际速率密度与 Maxwell 理论密度。
+3. **自行计算扩散系数**：使用 analysis/*/msd.csv，自主选择线性时间窗拟合 MSD 斜率，并用三维关系 D* = slope/6。
+4. **研究扩散与压强**：汇总五组实测平均压强和 D*，自行绘制 D*–P*、D*–1/P* 或 log D*–log P*。
+5. **比较速率分布**：从 trajectory.lammpstrj 提取速度，构造概率密度直方图，并自行计算 Maxwell 理论曲线。
 6. **检查热力学状态**：使用 analysis/*/thermo.csv 检查平均温度、平均压强、密度和平衡稳定性。
 
 ## 四、如何从 LAMMPS 数据提取分析量
@@ -120,16 +118,9 @@ speed = (vx**2 + vy**2 + vz**2) ** 0.5
 f(v*) = 4π [1/(2πT*)]^(3/2) v*² exp[-v*²/(2T*)]
 ```
 
-### 3. 从汇总表得到 D–P 关系
+### 3. 自行汇总 D–P 关系
 
-```python
-table = pd.read_csv("analysis/diffusion_vs_pressure.csv")
-P = table["mean_pressure"]
-D = table["diffusion_lj"]
-
-# 稀薄气体近似：D* = a/P* + b
-a, b = np.polyfit(1 / P, D, 1)
-```
+对五个目录分别完成温度和压强的稳定性检查、MSD 线性区间选择和扩散系数拟合。将得到的实测平均压强与 D* 整理成自己的表格，再检验 D* 与 1/P* 是否近似线性。数据包不提供汇总结果、拟合参数或现成理论对比曲线。
 
 ### 4. 从反射墙轨迹得到混合度
 

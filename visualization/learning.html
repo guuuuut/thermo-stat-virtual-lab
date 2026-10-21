@@ -118,7 +118,6 @@
         <div class="subtitle">LAMMPS 初学者指南：模型、运动计算与热力学分析</div>
         <nav class="actions" aria-label="页面导航">
           <a class="button primary" href="index.html">返回三维动画</a>
-          <a class="button" href="pressure_analysis.html">查看数据分析</a>
           <a class="button" href="downloads/pressure_diffusion_trajectories.zip" download>下载数据包</a>
         </nav>
       </header>
@@ -244,7 +243,7 @@
           </table>
         </div>
         <h3>氩参数换算示例</h3>
-        <p>若取 \(\sigma=3.405\,\text{Å}\)、\(\varepsilon/k_{\mathrm B}=119.8\,\mathrm K\)、\(m=39.948\,\mathrm u\)，则时间单位约为 \(2.156\,\mathrm{ps}\)，扩散系数单位约为 \(5.377\times10^{-8}\,\mathrm{m^2/s}\)。因此 \(T^*=2\) 对应约 \(239.6\,\mathrm K\)，\(100t^*\) 对应约 \(215.6\,\mathrm{ps}\)；\(P^*=0.30\) 算例的 \(D^*=1.662\) 对应约 \(8.94\times10^{-8}\,\mathrm{m^2/s}\)。</p>
+        <p>若取 \(\sigma=3.405\,\text{Å}\)、\(\varepsilon/k_{\mathrm B}=119.8\,\mathrm K\)、\(m=39.948\,\mathrm u\)，则时间单位约为 \(2.156\,\mathrm{ps}\)，扩散系数单位约为 \(5.377\times10^{-8}\,\mathrm{m^2/s}\)。因此 \(T^*=2\) 对应约 \(239.6\,\mathrm K\)，\(100t^*\) 对应约 \(215.6\,\mathrm{ps}\)。各压强下的扩散系数及其 SI 换算由学生根据数据自行完成。</p>
         <div class="callout"><span class="task">练习：</span>从原始论文或可信数据手册查找另一种稀有气体的 σ、ε/k<sub>B</sub> 和原子质量，独立完成时间、压强、速度与扩散系数的 SI 换算，并说明这种映射的局限。</div>
         <h3>原始文献与官方说明</h3>
         <ul class="sources">
@@ -336,7 +335,6 @@
               <tr><td><code>lammps/in.lj_diffusion_pressure_reflective_preview</code></td><td>反射墙短轨迹：NPT 平衡后切换六面反射墙，做 0–100 t* 的 NVT，用于动画。</td></tr>
               <tr><td><code>scripts/run_pressure_diffusion.py</code></td><td>依次运行五个目标压强的长轨迹。</td></tr>
               <tr><td><code>scripts/run_pressure_diffusion_preview.py</code></td><td>依次运行五个目标压强的反射墙预览轨迹。</td></tr>
-              <tr><td><code>scripts/analyze_pressure_diffusion.py</code></td><td>由 thermo.csv 和 msd.csv 拟合扩散系数与压强关系。</td></tr>
             </tbody>
           </table>
         </div>
@@ -354,7 +352,7 @@ fix ... wall/reflect       # 预览轨迹中的六面反射墙</code></pre>
           <li>预设运行 30,000 步 NPT，观察体积和密度对目标压强的调整；是否达到平衡需检查日志。</li>
           <li>固定 NPT 结束时的盒体积，并根据粒子的 x 坐标赋予左右示踪标签。</li>
           <li>长轨迹保持周期边界运行 100,000 步；预览轨迹切换反射墙运行 20,000 步。</li>
-          <li>输出热力学量、MSD、轨迹和最终构型，再由独立脚本生成汇总表和图。</li>
+          <li>输出热力学量、MSD、轨迹和最终构型，供学生自行选择统计区间、拟合并作图。</li>
         </ol>
         <h3>输出文件与用途</h3>
         <div class="table-wrap">
@@ -364,10 +362,6 @@ fix ... wall/reflect       # 预览轨迹中的六面反射墙</code></pre>
               <tr><td><code>thermo.csv</code></td><td>step, time, temp, pressure, density, volume</td><td>检查平衡、计算平均状态和压强涨落。</td></tr>
               <tr><td><code>msd.csv</code></td><td>step, time, msd</td><td>拟合 MSD 斜率，由 D*=(1/6)d(MSD*)/dt* 得到扩散系数。</td></tr>
               <tr><td><code>trajectory.lammpstrj</code></td><td>id, type, x/y/z, xu/yu/zu, vx/vy/vz</td><td>三维显示、混合度、速率分布，以及用未折返坐标复算位移。</td></tr>
-              <tr><td><code>summary.json</code></td><td>平均状态、拟合区间、D*、R²、换算因子</td><td>程序读取的机器可读分析摘要。</td></tr>
-              <tr><td><code>diffusion_vs_pressure.csv</code></td><td>mean_pressure, diffusion_lj 等</td><td>绘制 D–P、D–1/P 和对数关系。</td></tr>
-              <tr><td><code>msd_theory_curves.csv</code></td><td>实际 MSD、6D*t、拟合窗标记</td><td>比较模拟曲线与 Einstein 扩散模型。</td></tr>
-              <tr><td><code>speed_distribution.csv</code></td><td>速率分箱、实测密度、Maxwell 密度</td><td>检查速度采样是否符合平衡分布。</td></tr>
             </tbody>
           </table>
         </div>
@@ -375,8 +369,8 @@ fix ... wall/reflect       # 预览轨迹中的六面反射墙</code></pre>
         <div class="formula">\[D^*=\frac{1}{6}\frac{\mathrm{d}\,\mathrm{MSD}^*}{\mathrm{d}t^*}\]</div>
         <div class="formula">\[v^*=\sqrt{(v_x^*)^2+(v_y^*)^2+(v_z^*)^2}\]</div>
         <div class="formula">\[D^*\approx\frac{a}{P^*}+b\]</div>
-        <p>最后一个关系是针对本组数据的经验拟合，适用范围需要检验；其中压强应使用生产阶段的实测平均值。拟合优度较高只能说明这段数据接近该关系，仍需检查采样、拟合区间和不确定度。</p>
-        <div class="callout"><span class="task">练习：</span>选取一个压强算例，根据 README 和原始 CSV 计算 D*，与 summary.json 中的结果对照，并比较不同拟合区间对结果的影响。</div>
+        <p>最后一个关系作为待检验的稀薄气体近似；其中压强应由生产阶段数据自行求平均。学生需要说明拟合区间、拟合质量和不确定度，而不能只报告一条曲线。</p>
+        <div class="callout"><span class="task">练习：</span>先为每个压强选择 MSD 的线性区间并计算 D*，再自行绘制 D*–P*、D*–1/P* 或对数关系；比较不同拟合区间对结论的影响。</div>
         <h3>对应的 LAMMPS 官方文档</h3>
         <ul class="sources">
           <li><a href="https://docs.lammps.org/fix_nh.html" target="_blank" rel="noreferrer">fix nvt / npt</a>：Nosé–Hoover 恒温与恒压积分。</li>
