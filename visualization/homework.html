@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="visual-lab-page" content="homework-six-choice-v1">
+  <title>分子动力学六选一小作业</title>
+  <style>
+    :root { color-scheme: light dark; --page:light-dark(#eef3f7,#091118); --surface:light-dark(#fff,#121d26); --text:light-dark(#17232d,#edf5f8); --muted:light-dark(#536774,#adbeca); --accent:light-dark(#176b8f,#67c8ec); --border:light-dark(#cbd7df,#344753); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page); color:var(--text); font-family:"Times New Roman","Microsoft YaHei",serif; line-height:1.8; }
+    main { max-width:980px; margin:24px auto; padding:26px 30px 36px; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+    nav { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
+    a { color:var(--accent); }
+    .download { display:block; width:fit-content; padding:9px 17px; background:var(--accent); color:var(--surface); border-radius:7px; text-decoration:none; font-family:inherit; }
+    .note { color:var(--muted); margin:8px 0 22px; }
+    h1 { font-size:27px; margin:12px 0; line-height:1.45; }
+    h2 { font-size:21px; margin:30px 0 10px; line-height:1.5; }
+    p { margin:10px 0; }
+    li { margin:7px 0; }
+    code { font-family:"Times New Roman","Microsoft YaHei",serif; overflow-wrap:anywhere; }
+    a:focus-visible { outline:3px solid var(--accent); outline-offset:4px; }
+    @media(max-width:680px) { main { margin:0; border:0; border-radius:0; padding:18px 17px 30px; } h1 { font-size:24px; } h2 { font-size:20px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <nav aria-label="实验导航"><a href="index.html">三维实验主页</a><a href="learning.html">学习指南</a></nav>
+    <a class="download" href="downloads/homework_20261027.zip" download>下载六选一学生数据包（约 2.2 MB）</a>
+    <p class="note">题单、CSV 与字段说明已包含在数据包中。只需使用自己选择的题目对应的文件夹。</p>
+    <h1>分子动力学数据分析小作业</h1>
+<p>从下面六个问题中任选一个。使用配套数据完成分析，不要求安装或运行 LAMMPS。</p>
+<p>提交 <strong>1–2 张图和 200–400 字说明</strong>，写明数据选择、分析方法、主要发现与一项局限。可以使用 Python、Origin、Excel 等工具；不以编程难度评分。需要拟合的题目，请保留拟合区间和关键计算过程。图中标注坐标、单位和工况。所有数据均使用 LJ 约化单位。</p>
+<h2>题一 温度改变时速率分布怎样变化</h2>
+<p>数据：<code>Q1_speed_distribution/</code>，三个温度，粒子数与密度相同。</p>
+<ul>
+<li>绘制三个温度下的速率概率密度分布，比较峰的位置、宽度和尾部。</li>
+<li>计算平均速率，解释观察到的温度变化趋势。可选叠加 Maxwell 理论分布。</li>
+</ul>
+<p>提示：文件已经提供速率列 <code>speed</code>，也保留了 <code>vx,vy,vz</code>。直方图应归一化为概率密度，比较时采用一致的分箱规则。<code>states.csv</code> 给出对应的实测平均温度。</p>
+<h2>题二 同温度下压强怎样影响扩散</h2>
+<p>数据：<code>Q2_pressure/</code>，五组目标压强，同温度、同粒子数，密度由 NPT 准备阶段调整。</p>
+<ul>
+<li>选至少三个工况绘制 MSD，在线性区间拟合扩散系数。</li>
+<li>使用实测平均压强绘制扩散系数与压强的关系图，并解释趋势。不要把目标压强当作实测值。</li>
+</ul>
+<p>提示：三维扩散区间中，扩散系数等于 MSD 对时间的斜率除以 6。可以先使用约化时间 100–450 的候选窗口，再检查另一窗口。轨迹是固定体积 NVT 采样数据。</p>
+<h2>题三 边界条件怎样影响均方位移</h2>
+<p>数据：<code>Q3_boundaries/</code>，相同粒子数、密度和目标温度下的周期边界与反射墙结果。</p>
+<ul>
+<li>在同一图中比较两种边界的 MSD，描述短时间与长时间的差别。</li>
+<li>解释为什么反射墙曲线的长期斜率不能直接当作体相扩散系数。</li>
+</ul>
+<p>提示：两种边界各自经过采样前调整；它们是相同宏观控制条件下的独立演化，不能拼接成一条轨迹。</p>
+<h2>题四 固定密度时温度升高怎样影响扩散</h2>
+<p>数据：<code>Q4_temperature_diffusion/</code>，三个温度，相同粒子数与数密度。</p>
+<ul>
+<li>对每个温度选择线性窗口，从 MSD 估计扩散系数。</li>
+<li>绘制扩散系数随实测平均温度变化的图，说明为什么这里要固定密度。</li>
+</ul>
+<p>提示：描述数据支持的趋势即可，不要求从三个温度点推出普适幂律。可与题一的速率变化作定性联系，但不要求同时完成题一。</p>
+<h2>题五 扩散结果对体系大小是否敏感</h2>
+<p>数据：<code>Q5_system_size/</code>，固定温度与数密度，四种粒子数，每种做五次独立重复。</p>
+<ul>
+<li>使用 <code>diffusion_replicates.csv</code> 绘制各次重复的扩散系数及每组均值，比较不同粒子数。</li>
+<li>结合重复间差异，判断当前数据能支持多强的体系大小结论。</li>
+</ul>
+<p>提示：本题已经提供按统一窗口拟合的逐次扩散系数，以便把精力放在体系大小与波动的比较上。另附每种大小的一条 MSD，可选复核。可用粒子数或盒长倒数作横轴；不要求必须外推无限大体系。</p>
+<h2>题六 速度怎样逐渐失去对初始方向的记忆</h2>
+<p>数据：<code>Q6_velocity_correlation/</code>，三个独立重复，已经从高频速度采样计算速度自相关。</p>
+<ul>
+<li>绘制速度自相关随滞后时间的变化，估计相关衰减的时间范围。</li>
+<li>对速度自相关积分，观察扩散估计随积分上限怎样变化，并与同组 MSD 估计比较。</li>
+</ul>
+<p>提示：文件中的 <code>vacf</code> 是三维速度点积的相关函数，已经对示踪粒子和多个时间起点平均。三维扩散系数为该函数时间积分的三分之一。积分到最大的时间不一定最可靠，应检查相关是否衰减以及积分是否出现相对稳定区间。</p>
+<h2>提交说明</h2>
+<p>文件名注明题号。结果有偏离并不扣分，关键是图与计算正确、解释与证据相符。不需要完成其他五题，也不要求做额外模拟。希望拓展的同学可以自拟一个相近规模的问题，交代控制变量、测量定义和数据来源。</p>
+<p>评价关注：数据与单位是否正确，图是否清晰，分析是否合理，结论是否有依据。</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-27",
+  "engine": "LAMMPS stable_30Sep2026",
+  "source_commit": "8de817dd79bfe4525d5d39246a212d833e6dee07",
+  "units": "LJ reduced units",
+  "dt": 0.005,
+  "questions": 6,
+  "assignment": "Choose one question only",
+  "source_cases": 47
+}

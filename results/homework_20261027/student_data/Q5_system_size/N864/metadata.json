@@ -1,0 +1,10 @@
+{
+  "id": "size_n0864_r1",
+  "family": "size",
+  "temperature": 1.5,
+  "density": 0.8,
+  "cells": 6,
+  "seed": 917009,
+  "replicate": 1,
+  "production_steps": 200000
+}

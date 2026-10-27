@@ -25,10 +25,21 @@
 /api.py
 /scripts/create_project_intro.js
 
+# Offline software archives and teacher-only worked answers stay local.
+/downloads/lammps-*.tar.gz
+/reports/homework_20261027/
+/scripts/homework_20261027/analyze_and_report.py
+/scripts/homework_20261027/package_materials.py
+/scripts/homework_20261027/process_server.py
+/scripts/homework_20261027/finish_processing.sh
+
 # Precomputed datasets needed for the first public demo.
 /results/*
 !/results/diffusion_pressure/
 !/results/diffusion_pressure_preview/
+!/results/homework_20261027/
+/results/homework_20261027/*
+!/results/homework_20261027/student_data/
 /results/diffusion_pressure/*
 !/results/diffusion_pressure/run_manifest.json
 !/results/diffusion_pressure/summary.json

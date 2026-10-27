@@ -22,8 +22,12 @@ $python = Join-Path $projectRoot '.venv\Scripts\python.exe'
 $pageBuilder = Join-Path $projectRoot 'scripts\build_pressure_diffusion_3d.py'
 $page = Join-Path $projectRoot 'visualization\pressure_diffusion.html'
 $learningPage = Join-Path $projectRoot 'visualization\learning.html'
+$homeworkBuilder = Join-Path $projectRoot 'scripts\build_homework_materials.py'
+$homeworkPage = Join-Path $projectRoot 'visualization\homework.html'
+$homeworkArchive = Join-Path $projectRoot 'downloads\homework_20261027.zip'
 $mainPageMarker = '<meta name="visual-lab-page" content="pressure-diffusion-v1">'
 $learningPageMarker = '<meta name="visual-lab-page" content="learning-guide-v1">'
+$homeworkPageMarker = '<meta name="visual-lab-page" content="homework-six-choice-v1">'
 $packageReadmeMarker = '<!-- visual-lab-package: pressure-diffusion-v1 -->'
 $archive = Join-Path $projectRoot 'downloads\pressure_diffusion_trajectories.zip'
 
@@ -35,6 +39,7 @@ $KeyPath = [IO.Path]::GetFullPath($KeyPath)
 foreach ($required in @(
     $python,
     $pageBuilder,
+    $homeworkBuilder,
     $learningPage,
     $KeyPath
 )) {
@@ -63,11 +68,14 @@ $verifyRoot = Join-Path $tempRoot 'verify'
 $newArchive = Join-Path $tempRoot 'pressure_diffusion_trajectories.zip'
 $remoteScriptLocal = Join-Path $tempRoot 'deploy-site.sh'
 $publicArchive = Join-Path $tempRoot 'public-archive.zip'
+$publicHomeworkArchive = Join-Path $tempRoot 'public-homework.zip'
 New-Item -ItemType Directory -Path $tempRoot, $packageRoot | Out-Null
 
 $remoteIndex = "/tmp/visual-lab-$stamp-index.html"
 $remoteLearningPage = "/tmp/visual-lab-$stamp-learning.html"
 $remoteArchive = "/tmp/visual-lab-$stamp-trajectories.zip"
+$remoteHomeworkPage = "/tmp/visual-lab-$stamp-homework.html"
+$remoteHomeworkArchive = "/tmp/visual-lab-$stamp-homework.zip"
 $remoteScript = "/tmp/visual-lab-$stamp-deploy.sh"
 $remoteBackup = "/root/visual-lab-backups/deploy-$stamp"
 $deploymentApplied = $false
@@ -212,7 +220,13 @@ function Restore-RemoteBackup {
         "else rm -f /var/www/visual-lab/results/diffusion_pressure/diffusion_vs_pressure.csv; fi && " +
         "if test -f $remoteBackup/learning-page.existed; then " +
         "cp -p $remoteBackup/learning.html /var/www/visual-lab/learning.html; " +
-        "else rm -f /var/www/visual-lab/learning.html; fi"
+        "else rm -f /var/www/visual-lab/learning.html; fi && " +
+        "if test -f $remoteBackup/homework-page.existed; then " +
+        "cp -p $remoteBackup/homework.html /var/www/visual-lab/homework.html; " +
+        "else rm -f /var/www/visual-lab/homework.html; fi && " +
+        "if test -f $remoteBackup/homework-archive.existed; then " +
+        "cp -p $remoteBackup/homework_20261027.zip /var/www/visual-lab/downloads/homework_20261027.zip; " +
+        "else rm -f /var/www/visual-lab/downloads/homework_20261027.zip; fi"
     Invoke-NativeChecked `
         -Program 'ssh' `
         -Arguments ($sshArgs + @($serverTarget, $restore)) `
@@ -220,17 +234,22 @@ function Restore-RemoteBackup {
 }
 
 try {
-    Write-Host '[1/7] Building visualization HTML page...'
+    Write-Host '[1/7] Building visualization and homework pages...'
     Invoke-NativeChecked `
         -Program $python `
         -Arguments @($pageBuilder) `
         -FailureMessage 'Visualization build failed'
+    Invoke-NativeChecked `
+        -Program $python `
+        -Arguments @($homeworkBuilder) `
+        -FailureMessage 'Homework page and student-package build failed'
     if (-not (Test-Path -LiteralPath $page -PathType Leaf)) {
         throw "Visualization output missing: $page"
     }
     $pageMarkers = @{
         $page = $mainPageMarker
         $learningPage = $learningPageMarker
+        $homeworkPage = $homeworkPageMarker
     }
     foreach ($entry in $pageMarkers.GetEnumerator()) {
         $pageSource = [IO.File]::ReadAllText($entry.Key, [Text.Encoding]::UTF8)
@@ -246,6 +265,8 @@ try {
         $remoteIndex = Get-Sha256 $page
         $remoteLearningPage = Get-Sha256 $learningPage
         $remoteArchive = Get-Sha256 $archive
+        $remoteHomeworkPage = Get-Sha256 $homeworkPage
+        $remoteHomeworkArchive = Get-Sha256 $homeworkArchive
     }
 
     Write-Host '[3/7] Checking SSH connectivity and remote targets...'
@@ -258,7 +279,9 @@ try {
     foreach ($item in @(
         @($page, $remoteIndex),
         @($learningPage, $remoteLearningPage),
-        @($archive, $remoteArchive)
+        @($archive, $remoteArchive),
+        @($homeworkPage, $remoteHomeworkPage),
+        @($homeworkArchive, $remoteHomeworkArchive)
     )) {
         Invoke-NativeChecked `
             -Program 'scp' `
@@ -275,16 +298,22 @@ incoming_index=$2
 incoming_learning=$3
 incoming_archive=$4
 health_host=$5
+incoming_homework=$6
+incoming_homework_archive=$7
 site=/var/www/visual-lab
 backup="/root/visual-lab-backups/deploy-$stamp"
 index="$site/index.html"
 learning="$site/learning.html"
 archive="$site/downloads/pressure_diffusion_trajectories.zip"
+homework="$site/homework.html"
+homework_archive="$site/downloads/homework_20261027.zip"
 retired_analysis="$site/pressure_analysis.html"
 retired_csv="$site/results/diffusion_pressure/diffusion_vs_pressure.csv"
 index_next="$index.next"
 learning_next="$learning.next"
 archive_next="$archive.next"
+homework_next="$homework.next"
+homework_archive_next="$homework_archive.next"
 deployed=0
 
 restore_and_cleanup() {
@@ -308,8 +337,18 @@ restore_and_cleanup() {
         else
             rm -f "$learning"
         fi
+        if [ -f "$backup/homework-page.existed" ]; then
+            cp -p "$backup/homework.html" "$homework"
+        else
+            rm -f "$homework"
+        fi
+        if [ -f "$backup/homework-archive.existed" ]; then
+            cp -p "$backup/homework_20261027.zip" "$homework_archive"
+        else
+            rm -f "$homework_archive"
+        fi
     fi
-    rm -f "$index_next" "$learning_next" "$archive_next"
+    rm -f "$index_next" "$learning_next" "$archive_next" "$homework_next" "$homework_archive_next"
     exit "$status"
 }
 trap restore_and_cleanup EXIT HUP INT TERM
@@ -317,6 +356,8 @@ trap restore_and_cleanup EXIT HUP INT TERM
 test -f "$incoming_index"
 test -f "$incoming_learning"
 test -f "$incoming_archive"
+test -f "$incoming_homework"
+test -f "$incoming_homework_archive"
 test -f "$index"
 test -f "$archive"
 test ! -e "$backup"
@@ -336,21 +377,35 @@ if [ -f "$learning" ]; then
     cp -p "$learning" "$backup/learning.html"
     touch "$backup/learning-page.existed"
 fi
+if [ -f "$homework" ]; then
+    cp -p "$homework" "$backup/homework.html"
+    touch "$backup/homework-page.existed"
+fi
+if [ -f "$homework_archive" ]; then
+    cp -p "$homework_archive" "$backup/homework_20261027.zip"
+    touch "$backup/homework-archive.existed"
+fi
 
 install -m 644 "$incoming_index" "$index_next"
 install -m 644 "$incoming_learning" "$learning_next"
 install -m 644 "$incoming_archive" "$archive_next"
+install -m 644 "$incoming_homework" "$homework_next"
+install -m 644 "$incoming_homework_archive" "$homework_archive_next"
 
 deployed=1
 mv "$index_next" "$index"
 mv "$learning_next" "$learning"
 mv "$archive_next" "$archive"
+mv "$homework_next" "$homework"
+mv "$homework_archive_next" "$homework_archive"
 rm -f "$retired_analysis" "$retired_csv"
 
 systemctl is-active --quiet nginx
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/'
 curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/learning.html'
 curl --fail --silent --show-error --output /dev/null --head --header "Host: $health_host" 'http://127.0.0.1/downloads/pressure_diffusion_trajectories.zip'
+curl --fail --silent --show-error --output /dev/null --header "Host: $health_host" 'http://127.0.0.1/homework.html'
+curl --fail --silent --show-error --output /dev/null --head --header "Host: $health_host" 'http://127.0.0.1/downloads/homework_20261027.zip'
 test ! -e "$retired_analysis"
 test ! -e "$retired_csv"
 '@
@@ -368,7 +423,9 @@ test ! -e "$retired_csv"
     $uploadedHashes = Get-RemoteHashes @(
         $remoteIndex,
         $remoteLearningPage,
-        $remoteArchive
+        $remoteArchive,
+        $remoteHomeworkPage,
+        $remoteHomeworkArchive
     )
     foreach ($path in $localHashes.Keys) {
         if (-not $uploadedHashes.ContainsKey($path) -or $uploadedHashes[$path] -ne $localHashes[$path]) {
@@ -381,7 +438,7 @@ test ! -e "$retired_csv"
         -Program 'ssh' `
         -Arguments ($sshArgs + @(
             $serverTarget,
-            "sh $remoteScript $stamp $remoteIndex $remoteLearningPage $remoteArchive $ServerAddress"
+            "sh $remoteScript $stamp $remoteIndex $remoteLearningPage $remoteArchive $ServerAddress $remoteHomeworkPage $remoteHomeworkArchive"
         )) `
         -FailureMessage 'Remote deployment failed; server-side rollback was attempted'
     $deploymentApplied = $true
@@ -389,13 +446,17 @@ test ! -e "$retired_csv"
     $livePaths = @(
         '/var/www/visual-lab/index.html',
         '/var/www/visual-lab/learning.html',
-        '/var/www/visual-lab/downloads/pressure_diffusion_trajectories.zip'
+        '/var/www/visual-lab/downloads/pressure_diffusion_trajectories.zip',
+        '/var/www/visual-lab/homework.html',
+        '/var/www/visual-lab/downloads/homework_20261027.zip'
     )
     $liveHashes = Get-RemoteHashes $livePaths
     foreach ($comparison in @(
         @($livePaths[0], $localHashes[$remoteIndex]),
         @($livePaths[1], $localHashes[$remoteLearningPage]),
-        @($livePaths[2], $localHashes[$remoteArchive])
+        @($livePaths[2], $localHashes[$remoteArchive]),
+        @($livePaths[3], $localHashes[$remoteHomeworkPage]),
+        @($livePaths[4], $localHashes[$remoteHomeworkArchive])
     )) {
         if (-not $liveHashes.ContainsKey($comparison[0]) -or $liveHashes[$comparison[0]] -ne $comparison[1]) {
             throw "Live SHA-256 mismatch: $($comparison[0])"
@@ -405,13 +466,14 @@ test ! -e "$retired_csv"
     Write-Host '[6/7] Verifying public pages and student download...'
     try {
         $pageResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/" -TimeoutSec 45
-        if ([int]$pageResponse.StatusCode -ne 200 -or -not $pageResponse.Content.Contains($mainPageMarker)) {
+        if ([int]$pageResponse.StatusCode -ne 200 -or -not $pageResponse.Content.Contains($mainPageMarker) -or -not $pageResponse.Content.Contains('href="homework.html"')) {
             throw 'Public page did not return the expected visualization.'
         }
         $learningResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/learning.html" -TimeoutSec 45
         if (
             [int]$learningResponse.StatusCode -ne 200 -or
-            -not $learningResponse.Content.Contains($learningPageMarker)
+            -not $learningResponse.Content.Contains($learningPageMarker) -or
+            -not $learningResponse.Content.Contains('href="homework.html"')
         ) {
             throw 'Public learning page did not return the expected content.'
         }
@@ -424,6 +486,18 @@ test ! -e "$retired_csv"
         if ((Get-Sha256 $publicArchive) -ne (Get-Sha256 $archive)) {
             throw 'Public trajectory ZIP SHA-256 mismatch.'
         }
+        $homeworkResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/homework.html" -TimeoutSec 45
+        if ([int]$homeworkResponse.StatusCode -ne 200 -or -not $homeworkResponse.Content.Contains($homeworkPageMarker)) {
+            throw 'Public homework page did not return the expected content.'
+        }
+        Invoke-WebRequest `
+            -UseBasicParsing `
+            -Uri "$publicBase/downloads/homework_20261027.zip" `
+            -OutFile $publicHomeworkArchive `
+            -TimeoutSec 90
+        if ((Get-Sha256 $publicHomeworkArchive) -ne (Get-Sha256 $homeworkArchive)) {
+            throw 'Public homework ZIP SHA-256 mismatch.'
+        }
     }
     catch {
         Restore-RemoteBackup
@@ -434,11 +508,21 @@ test ! -e "$retired_csv"
     Write-Host '[7/7] Deployment complete.'
     Write-Host "Page: $publicBase/"
     Write-Host "Learning: $publicBase/learning.html"
+    Write-Host "Homework: $publicBase/homework.html"
     Write-Host "ZIP SHA-256: $(Get-Sha256 $archive)"
+    Write-Host "Homework ZIP SHA-256: $(Get-Sha256 $homeworkArchive)"
     Write-Host "Remote backup: $remoteBackup"
 }
+catch {
+    # This also covers failures in live-hash verification after the remote switch.
+    if ($deploymentApplied) {
+        Restore-RemoteBackup
+        $deploymentApplied = $false
+    }
+    throw
+}
 finally {
-    $cleanupCommand = "rm -f -- $remoteIndex $remoteLearningPage $remoteArchive $remoteScript"
+    $cleanupCommand = "rm -f -- $remoteIndex $remoteLearningPage $remoteArchive $remoteHomeworkPage $remoteHomeworkArchive $remoteScript"
     & ssh @sshArgs $serverTarget $cleanupCommand 2>$null | Out-Null
 
     if (-not $KeepTemporaryFiles -and (Test-Path -LiteralPath $tempRoot)) {

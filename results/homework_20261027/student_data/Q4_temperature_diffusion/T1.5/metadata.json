@@ -1,0 +1,12 @@
+{
+  "id": "temperature_t15_r1",
+  "family": "temperature",
+  "temperature": 1.5,
+  "density": 0.1,
+  "cells": 8,
+  "seed": 816009,
+  "replicate": 1,
+  "production_steps": 100000,
+  "speeds": true,
+  "dense": false
+}

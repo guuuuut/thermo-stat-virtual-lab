@@ -1,0 +1,11 @@
+{
+  "id": "boundary_reflect_r1",
+  "family": "boundary",
+  "temperature": 2.0,
+  "density": 0.1,
+  "cells": 8,
+  "seed": 816009,
+  "replicate": 1,
+  "production_steps": 100000,
+  "reflect": true
+}

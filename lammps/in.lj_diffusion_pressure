@@ -1,79 +1,158 @@
-# Isothermal pressure-series diffusion protocol.
-# Stage 1: NPT equilibration at target pressure.
-# Stage 2: freeze the equilibrated volume and measure diffusion in NVT.
-# Periodic boundaries are required in dimensions controlled by fix npt.
+# 等温压强扫描的定量分析脚本：先用 NPT 调整体积，再固定体积做 NVT 扩散测量。
+# NPT 与 NVT 两段都使用周期边界；后者的长轨迹用于体相 MSD 与扩散系数分析。
+# 两种粒子类型的质量和相互作用相同，类型编号只记录采样开始时位于左侧还是右侧。
+# 所有物理量使用 LJ 约化单位；下面每条命令的说明均不改变原有计算设置。
+# 文件输出到运行时的工作目录；index 变量的默认值可由命令行 -var 覆盖。
 
+# 清除上一次模拟的体系与设置，开始建立一个新的独立算例。
 clear
+# 使用 LJ 约化单位：以 sigma、epsilon 和参考质量 m 为基本尺度，k_B 取 1。
+# 时间单位 tau = sigma*sqrt(m/epsilon)；输入的时间、温度和压强都不是直接的秒、K 或 Pa。
 units           lj
+# 在三维空间中计算粒子运动，每个粒子具有 x、y、z 三个坐标。
 dimension       3
+# 三个方向均使用周期边界：粒子跨界后继续运动，作用力也跨边界计算。
+# 后面的 NPT 若同时调节三个方向的盒长，就要求这三个方向均为周期边界。
 boundary        p p p
+# 采用简单原子模型，记录粒子编号、类型、位置等，不建立分子键或电荷。
 atom_style      atomic
 
+# 定义目标约化温度，默认 T*=2.0；index 变量可由命令行 -var temperature 覆盖。
 variable        temperature index 2.0
+# 定义 NPT 阶段的目标约化压强，默认 P*=0.1；后续 NVT 阶段不再控制压强。
 variable        target_pressure index 0.1
+# 定义建立初态时的约化数密度，默认 0.05；NPT 会通过改变体积重新调整密度。
 variable        initial_density index 0.05
+# 定义每个方向排列 5 个 FCC 常规晶胞；每晶胞含 4 个粒子，默认共 4*5^3=500 个。
 variable        cells index 5
+# 定义生成初速度的随机种子；固定种子便于复现，改变种子可用于独立重复。
 variable        seed index 20260922
+# 为 NPT 调整阶段分配 30000 步；是否充分平衡，需要查看日志中的温度、压强和体积。
 variable        equil_steps index 30000
+# 定义正式采样阶段的步数，默认 100000；在当前时间步下对应 500 个约化时间单位。
 variable        prod_steps index 100000
+# 每 100 个积分步保存一次 CSV 数据；当前时间步下，采样时间间隔为 0.5。
 variable        sample_interval index 100
+# 每 2500 个积分步保存一帧粒子轨迹；当前时间步下，帧间隔为 12.5。
 variable        dump_interval index 2500
 
+# 定义 FCC 初始排列；在 units lj 中，后面的参数指定初始数密度，而不是晶格常数。
 lattice         fcc ${initial_density}
+# 定义名为 box 的长方体区域；三个方向都从 0 延伸到 cells 个晶格周期。
+# units lattice 表示这里的区域尺寸按刚才定义的晶格尺度解释。
 region          box block 0 ${cells} 0 ${cells} 0 ${cells} units lattice
+# 在 box 区域建立模拟盒，预留 2 种类型编号，供后面区分左右两组示踪粒子。
 create_box      2 box
+# 按上述 FCC 排列在盒内生成粒子，初始全部设为类型 1。
 create_atoms    1 box
+# 把类型 1 粒子的约化质量设为 1.0。
 mass            1 1.0
+# 把类型 2 粒子的约化质量也设为 1.0；两种类型的质量相同。
 mass            2 1.0
 
+# 采用 12-6 Lennard-Jones 对势，只计算距离小于 2.5*sigma 的粒子对相互作用。
 pair_style      lj/cut 2.5
+# 设置 1-1 粒子对：epsilon=1、sigma=1、截断距离=2.5。
 pair_coeff      1 1 1.0 1.0 2.5
+# 设置 1-2 粒子对，参数与 1-1 完全相同；标签不同不会改变相互作用。
 pair_coeff      1 2 1.0 1.0 2.5
+# 设置 2-2 粒子对，参数也相同；两种类型只用于示踪，不是两种不同的物质。
 pair_coeff      2 2 1.0 1.0 2.5
+# 在截断范围内给势能减去常数 U(r_c)，使势能在截断处连续。
+# 这不改变截断范围内的力，也不会把截断处的力平滑到零。
 pair_modify     shift yes
+# 用空间分箱法建立邻居列表，并在作用半径外增加 0.3 的缓冲距离；真实作用截断仍为 2.5。
 neighbor        0.3 bin
+# 不设置等待步数，每一步都检查是否需要重建邻居列表；check yes 避免在位移很小时无谓重建。
 neigh_modify    delay 0 every 1 check yes
 
+# 每一步推进 0.005 个 LJ 时间单位；固定时间步下，经过 n 步的约化时长为 n*0.005。
+# 积分时间步与 CSV 保存间隔、轨迹帧间隔、动画播放倍率是不同的设置。
 timestep        0.005
+# 按目标温度和随机种子生成初速度，各速度分量采用高斯分布。
+# mom yes 去除整体平移动量；rot no 不额外去除整体转动。生成速度后，初始结构仍需调整。
 velocity        all create ${temperature} ${seed} mom yes rot no dist gaussian
 
+# 每 1000 步在屏幕和日志中输出一次热力学量，便于检查 NPT 调整过程。
 thermo          1000
+# 指定日志字段：步号、粒子数、温度、压强、密度、体积、势能、动能、总能量。
+# units lj 下，pe、ke、etotal 默认按粒子数归一；密度在本例中与数密度数值相同。
 thermo_style    custom step atoms temp press density vol pe ke etotal
+# 每次热力学输出后刷新日志缓冲，便于在运行过程中及时读取日志。
 thermo_modify   flush yes
 
-# Equilibrate density and volume at the requested pressure.
+# 对 all 粒子启用名为 equilibration 的 NPT 积分器，同时控制温度并调节盒体积。
+# temp 后依次为起始目标温度、最终目标温度、控温时间尺度 0.5（当前为 100 步）。
+# iso 后依次为起始目标压强、最终目标压强、控压时间尺度 5.0（当前为 1000 步）。
+# iso 让三个方向的盒长按相同比例调节；受控方向必须使用周期边界。
+# drag 1.0 给调节变量增加阻尼以抑制振荡，也会改变严格的 NPT 统计分布。
+# fix npt 已包含运动积分；不要再对同一组粒子叠加 fix nve 或另一个积分器。
 fix             equilibration all npt temp ${temperature} ${temperature} 0.5 iso ${target_pressure} ${target_pressure} 5.0 drag 1.0
+# 按当前积分与调节设置推进 equil_steps 步；应根据数据趋势判断初态影响是否消退。
 run             ${equil_steps}
+# 不推进时间，按当前状态执行一次运行初始化并更新力和可用的热力学量。
 run             0
+# 撤去 NPT 积分器与恒压调节，保留结束时的粒子状态和瞬时盒尺寸。
+# 后面固定这个体积做 NVT；正式采样的平均压强需要重新测量，不保证恰好等于目标压强。
 unfix           equilibration
+# 统一缩放现有速度，使此刻温度等于目标值；这只是一次初态调整，不是持续恒温。
+# 缩放不会重新随机生成运动方向，也不会移动粒子；后续温度仍由 NVT 积分器调节。
 velocity        all scale ${temperature}
 
-# Assign visually distinct but physically identical tracer labels.
+# 定义表达式：用 NPT 结束后的左右盒边界求 x 方向中点；equal 变量会在被引用时计算。
 variable        midpoint equal 0.5*(xlo+xhi)
+# 现在就计算并代入中点数值，保存为划分左右示踪标签的固定分界位置。
 variable        split equal ${midpoint}
+# 建立左侧区域：x 不大于 split，其他方向不限制；units box 表示直接使用盒坐标的长度单位。
 region          left block INF ${split} INF INF INF INF units box
+# 建立右侧区域：x 不小于 split，其他方向不限制；这两个 region 仅用于贴标签，不会形成实体隔板。
 region          right block ${split} INF INF INF INF INF units box
+# 把此刻位于左半箱的粒子标为类型 1，之后它们即使跨过中线也保留该标签。
 set             region left type 1
+# 把此刻位于右半箱的粒子标为类型 2；若恰好在分界面，后执行的这条设置生效。
 set             region right type 2
 
-# Hold the NPT-equilibrated volume fixed while measuring self diffusion.
+# 把采样阶段的步号重新从 0 计数，不把粒子位置和速度倒回初态。
+# 本脚本使用固定时间步，后续输出的采样时间也由这个新的起点计算。
 reset_timestep  0
+# 正式采样：固定当前盒体积，用 NVT 积分器保持目标温度，控温时间尺度为 1.0（当前为 200 步）。
+# 盒体积不再由压强调节；温度、能量和实测压强仍可波动。此 fix 已包含运动积分。
 fix             production all nvt temp ${temperature} ${temperature} 1.0
+# 建立名为 displacement 的均方位移计算，以此刻的位置为参考，并扣除整体质心漂移。
+# 第 1、2、3 分量分别是三个方向的 MSD，第 4 分量是三维总 MSD；周期边界下会计入跨界位移。
 compute         displacement all msd com yes
 
+# 定义输出变量，读取当前积分步号；equal 表达式在使用时读取当前值。
 variable        sample_step equal step
+# 定义输出变量，读取当前模拟时间；这里是 LJ 约化时间，不是动画播放的秒数。
 variable        sample_time equal time
+# 定义输出变量，读取当前瞬时温度；恒温并不表示每一帧都等于目标温度。
 variable        sample_temp equal temp
+# 定义输出变量，读取 LAMMPS 计算的瞬时标量压强，而不是复制 NPT 的目标压强。
 variable        sample_press equal press
+# 定义输出变量，读取当前质量密度；粒子质量为 1 时，其数值与约化数密度相同。
 variable        sample_density equal density
+# 定义输出变量，读取当前盒体积；固定体积 NVT 阶段这个量保持不变。
 variable        sample_volume equal vol
+# 读取 compute displacement 的第 4 分量，即对粒子平均的三维总均方位移。
 variable        sample_msd equal c_displacement[4]
 
+# 每 sample_interval 步把步号、时间、温度、压强、密度和体积写入 thermo.csv。
+# 这里只记录后面的 NVT 段；此前 NPT 是否平衡，需要查看 log.lammps 中的数据。
+# screen no 关闭这组数据的屏幕回显，title 给出 CSV 表头。
 fix             thermo_output all print ${sample_interval} "${sample_step},${sample_time},${sample_temp},${sample_press},${sample_density},${sample_volume}" file thermo.csv screen no title "step,time,temp,pressure,density,volume"
+# 按相同采样间隔把步号、约化时间和三维总 MSD 写入 msd.csv，表头为 step,time,msd。
+# 三维体相扩散区间可用 D*=线性斜率/6；拟合前应检查边界和线性时间窗。
 fix             msd_output all print ${sample_interval} "${sample_step},${sample_time},${sample_msd}" file msd.csv screen no title "step,time,msd"
 
+# 按 dump_interval 保存轨迹：编号、类型、盒内坐标、未折返坐标和速度分量。
+# x/y/z 便于展示；周期轨迹中的 xu/yu/zu 保留跨界次数，便于复算长时间位移。
 dump            trajectory all custom ${dump_interval} trajectory.lammpstrj id type x y z xu yu zu vx vy vz
+# 让每帧轨迹按固定粒子编号排序，便于跨帧追踪；分析时仍应以 id 确认粒子身份。
 dump_modify     trajectory sort id
 
+# 按当前 NVT、数据输出及边界设置推进 prod_steps 步，生成正式采样结果。
 run             ${prod_steps}
+# 写出末态构型，并保存所有 i-j 类型配对的相互作用参数。
+# data 文件不保存全部恒温/恒压积分器状态，不能替代完整 restart 文件。
 write_data      final.data pair ij

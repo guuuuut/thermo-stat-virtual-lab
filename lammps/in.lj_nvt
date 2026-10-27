@@ -1,61 +1,121 @@
-# Minimal LJ fluid: equilibrate and sample with a Nose-Hoover NVT integrator.
-# All quantities use reduced Lennard-Jones units: epsilon = sigma = mass = k_B = 1.
+# LJ 流体的 NVT 教学脚本：固定粒子数 N 和盒体积 V，以恒温器控制温度 T。
+# 流程：建立初态 -> NVT 调整 -> 重新定义采样起点 -> NVT 正式采样。
+# 恒温器允许体系交换能量；瞬时温度和压强仍会波动，粒子体系总能量不要求守恒。
+# 下面每条可执行命令之前都给出中文说明；所有命令和原参数保持不变。
+# 文件输出到运行时的工作目录；index 变量的默认值可由命令行 -var 覆盖。
 
+# 清除上一次模拟的体系与设置，开始建立一个新的独立算例。
 clear
+# 使用 LJ 约化单位：以 sigma、epsilon 和参考质量 m 为基本尺度，k_B 取 1。
+# 时间单位 tau = sigma*sqrt(m/epsilon)；输入的时间、温度和压强都不是直接的秒、K 或 Pa。
 units           lj
+# 在三维空间中计算粒子运动，每个粒子具有 x、y、z 三个坐标。
 dimension       3
+# 三个方向均使用周期边界：粒子跨界后继续运动，作用力也跨边界计算，没有实体反射墙。
 boundary        p p p
+# 采用简单原子模型，记录粒子编号、类型、位置等，不建立分子键或电荷。
 atom_style      atomic
 
-# Command-line -var values override these defaults.
+# 定义目标约化温度，默认 T*=1.2；index 变量可由命令行 -var temperature 覆盖。
 variable        temperature index 1.2
+# 定义固定盒体积对应的约化初始数密度，默认 0.8；本例单位质量下也等于质量密度。
 variable        density index 0.8
+# 定义每个方向排列 4 个 FCC 常规晶胞；每晶胞含 4 个粒子，默认共 4*4^3=256 个。
 variable        cells index 4
+# 定义生成初速度的随机种子；固定种子便于复现，改变种子可用于独立重复。
 variable        seed index 20260824
+# 为初始调整阶段分配 5000 步；运行完这些步并不自动保证已达到平衡。
 variable        equil_steps index 5000
+# 定义正式采样阶段的步数，默认 10000；在当前时间步下对应 50 个约化时间单位。
 variable        prod_steps index 10000
 
+# 定义 FCC 初始排列；在 units lj 中，后面的参数指定数密度，而不是直接指定晶格常数。
 lattice         fcc ${density}
+# 定义名为 box 的长方体区域；三个方向都从 0 延伸到 cells 个晶格周期。
+# units lattice 表示这里的区域尺寸按刚才定义的晶格尺度解释。
 region          box block 0 ${cells} 0 ${cells} 0 ${cells} units lattice
+# 在 box 区域建立模拟盒，允许 1 种粒子类型；此时还没有真正放入粒子。
 create_box      1 box
+# 按上述 FCC 排列在盒内生成粒子，初始全部设为类型 1。
 create_atoms    1 box
+# 把类型 1 粒子的约化质量设为 1.0。
 mass            1 1.0
 
+# 采用 12-6 Lennard-Jones 对势，只计算距离小于 2.5*sigma 的粒子对相互作用。
 pair_style      lj/cut 2.5
+# 设置 1-1 粒子对：epsilon=1、sigma=1、截断距离=2.5。
 pair_coeff      1 1 1.0 1.0 2.5
+# 在截断范围内给势能减去常数 U(r_c)，使势能在截断处连续。
+# 这不改变截断范围内的力，也不会把截断处的力平滑到零。
 pair_modify     shift yes
+# 用空间分箱法建立邻居列表，并在作用半径外增加 0.3 的缓冲距离；真实作用截断仍为 2.5。
 neighbor        0.3 bin
+# 不设置等待步数，每一步都检查是否需要重建邻居列表；check yes 避免在位移很小时无谓重建。
 neigh_modify    delay 0 every 1 check yes
 
+# 每一步推进 0.005 个 LJ 时间单位；固定时间步下，经过 n 步的约化时长为 n*0.005。
+# 积分时间步与 CSV 保存间隔、轨迹帧间隔、动画播放倍率是不同的设置。
 timestep        0.005
+# 按目标温度和随机种子生成初速度，各速度分量采用高斯分布。
+# mom yes 去除整体平移动量；rot no 不额外去除整体转动。生成速度后，初始结构仍需调整。
 velocity        all create ${temperature} ${seed} mom yes rot no dist gaussian
 
+# 每 500 步在屏幕和日志中输出一次热力学量；这不是后面 CSV 的保存频率。
 thermo          500
+# 指定日志字段：步号、粒子数、温度、压强、势能、动能、总能量、密度。
+# units lj 下，pe、ke、etotal 默认按粒子数归一；不能直接当作全体系能量总量。
 thermo_style    custom step atoms temp press pe ke etotal density
+# 每次热力学输出后刷新日志缓冲，便于在运行过程中及时读取日志。
 thermo_modify   flush yes
 
+# 对 all 粒子启用名为 thermostat 的 Nose-Hoover NVT 积分器：固定粒子数与体积，控制温度。
+# 两个 temperature 是起始与最终目标温度，相同表示不升降温；瞬时温度仍会波动。
+# $(100.0*dt) 立即求值，令控温时间尺度为 100 个时间步，即当前的 0.5 个时间单位。
+# fix nvt 已包含位置和速度的时间积分，同一阶段不能再对这些粒子叠加 fix nve。
 fix             thermostat all nvt temp ${temperature} ${temperature} $(100.0*dt)
+# 按当前积分与调节设置推进 equil_steps 步；应根据数据趋势判断初态影响是否消退。
 run             ${equil_steps}
+# 撤去名为 thermostat 的旧 NVT 积分器，为重新定义正式采样阶段的积分器做准备。
 unfix           thermostat
 
-# Give both cases the same particle state and exact production-start temperature.
+# 统一缩放现有速度，使此刻温度等于目标值；这只是一次初态调整，不是持续恒温。
+# 缩放不会重新随机生成运动方向，也不会移动粒子；后续温度仍由 NVT 积分器调节。
 velocity        all scale ${temperature}
 
-# Start a fresh thermostat state and reset time for the production series.
+# 把采样阶段的步号重新从 0 计数，不把粒子位置和速度倒回初态。
+# 本脚本使用固定时间步，后续输出的采样时间也由这个新的起点计算。
 reset_timestep  0
+# 对 all 粒子启用名为 thermostat 的 Nose-Hoover NVT 积分器：固定粒子数与体积，控制温度。
+# 两个 temperature 是起始与最终目标温度，相同表示不升降温；瞬时温度仍会波动。
+# $(100.0*dt) 立即求值，令控温时间尺度为 100 个时间步，即当前的 0.5 个时间单位。
+# fix nvt 已包含位置和速度的时间积分，同一阶段不能再对这些粒子叠加 fix nve。
 fix             thermostat all nvt temp ${temperature} ${temperature} $(100.0*dt)
 
+# 定义输出变量，读取当前积分步号；equal 表达式在使用时读取当前值。
 variable        sample_step equal step
+# 定义输出变量，读取当前瞬时温度；恒温并不表示每一帧都等于目标温度。
 variable        sample_temp equal temp
+# 定义输出变量，读取 LAMMPS 根据动能和相互作用计算的瞬时标量压强；NVT 不直接控制压强。
 variable        sample_press equal press
+# 定义输出变量，读取势能；当前 LJ 热力学输出的默认口径是每粒子势能。
 variable        sample_pe equal pe
+# 定义输出变量，读取动能；当前 LJ 热力学输出的默认口径是每粒子动能。
 variable        sample_ke equal ke
+# 定义输出变量，读取动能加势能；当前默认口径为每粒子总能量，NVT 下不要求它守恒。
 variable        sample_etotal equal etotal
+# 定义输出变量，读取粒子总数，便于检查运行中是否发生粒子丢失。
 variable        sample_atoms equal atoms
 
+# 每 100 步把步号、温度、压强、每粒子势能/动能/总能量及粒子数写入 thermo.csv。
+# 引号中的变量由 fix print 在各次输出时取值；screen no 避免重复打印到屏幕，title 设置表头。
 fix             observables all print 100 "${sample_step},${sample_temp},${sample_press},${sample_pe},${sample_ke},${sample_etotal},${sample_atoms}" file thermo.csv screen no title "step,temp,pressure,pe,ke,etotal,atoms"
+# 每 500 步保存一帧全体粒子轨迹：编号、类型、盒内坐标和三个速度分量。
+# 这些 x/y/z 是折返坐标；若要据此研究跨周期边界的长时间位移，应另行输出未折返坐标。
 dump            trajectory all custom 500 trajectory.lammpstrj id type x y z vx vy vz
+# 让每帧轨迹按固定粒子编号排序，便于跨帧追踪；分析时仍应以 id 确认粒子身份。
 dump_modify     trajectory sort id
 
+# 按当前 NVT、数据输出及边界设置推进 prod_steps 步，生成正式采样结果。
 run             ${prod_steps}
+# 写出末态粒子构型和模型参数，便于检查或建立后续初态；data 文件不等同完整的 restart 续算状态。
 write_data      final.data

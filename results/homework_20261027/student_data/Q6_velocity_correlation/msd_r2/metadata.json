@@ -1,0 +1,12 @@
+{
+  "id": "temperature_t20_r2",
+  "family": "temperature",
+  "temperature": 2.0,
+  "density": 0.1,
+  "cells": 8,
+  "seed": 817018,
+  "replicate": 2,
+  "production_steps": 100000,
+  "speeds": true,
+  "dense": true
+}
