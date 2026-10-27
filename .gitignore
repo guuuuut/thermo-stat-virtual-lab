@@ -1,6 +1,7 @@
 # Public repository allowlist: new root-level files remain local by default.
 /*
 !/.gitignore
+!/.gitattributes
 !/README.md
 !/requirements.txt
 !/docs/
