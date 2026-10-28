@@ -19,9 +19,19 @@
     p { margin:10px 0; }
     li { margin:7px 0; }
     code { font-family:"Times New Roman","Microsoft YaHei",serif; overflow-wrap:anywhere; }
+    .math-display { overflow-x:auto; overflow-y:hidden; padding:5px 3px; margin:12px 0; }
+    .math-display mjx-container[display="true"] { margin:0.6em 0 !important; }
     a:focus-visible { outline:3px solid var(--accent); outline-offset:4px; }
     @media(max-width:680px) { main { margin:0; border:0; border-radius:0; padding:18px 17px 30px; } h1 { font-size:24px; } h2 { font-size:20px; } }
   </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'local' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
 </head>
 <body>
   <main>
@@ -66,6 +76,15 @@
 <li>结合重复间差异，判断当前数据能支持多强的体系大小结论。</li>
 </ul>
 <p>提示：本题已经提供按统一窗口拟合的逐次扩散系数，以便把精力放在体系大小与波动的比较上。另附每种大小的一条 MSD，可选复核。可用粒子数或盒长倒数作横轴；不要求必须外推无限大体系。</p>
+<p><strong>理论参考与作图引导：</strong> 周期边界消除了实体墙面，但流体的集体运动仍会受到周期镜像影响。对三维、各向同性流体的立方周期盒，流体力学给出的有限尺寸首阶修正形式为</p>
+<div class="math-display">\[
+D(L)=D_{\infty}-\frac{\xi k_{\mathrm B}T}{6\pi\eta L},\qquad \xi\simeq2.837297.
+\]</div>
+<p>其中 $D(L)$ 是盒长为 $L$ 时测得的扩散系数，$D_{\infty}$ 是无限大体系的扩散系数，$\eta$ 是剪切黏度。固定数密度 $\rho$ 时，盒长由粒子数确定：</p>
+<div class="math-display">\[
+L=\left(\frac{N}{\rho}\right)^{1/3}.
+\]</div>
+<p>可先画出每个大小的五次重复点，再标出组均值；如果选择 $1/L$ 为横轴，可以观察数据是否接近直线，以及斜率符号是否符合上述修正形式。重点比较不同大小的均值变化与同一大小的重复波动。公式用于理解趋势，基础任务不要求计算黏度或外推 $D_{\infty}$。</p>
 <h2>题六 速度怎样逐渐失去对初始方向的记忆</h2>
 <p>数据：<code>Q6_velocity_correlation/</code>，三个独立重复，已经从高频速度采样计算速度自相关。</p>
 <ul>
@@ -73,6 +92,19 @@
 <li>对速度自相关积分，观察扩散估计随积分上限怎样变化，并与同组 MSD 估计比较。</li>
 </ul>
 <p>提示：文件中的 <code>vacf</code> 是三维速度点积的相关函数，已经对示踪粒子和多个时间起点平均。三维扩散系数为该函数时间积分的三分之一。积分到最大的时间不一定最可靠，应检查相关是否衰减以及积分是否出现相对稳定区间。</p>
+<p><strong>理论参考与积分引导：</strong> 速度自相关衡量粒子在经过一段时间后，还保留多少原来速度的记忆。这里采用三维点积定义：</p>
+<div class="math-display">\[
+C_v(t)=\left\langle\mathbf v(t_0+t)\cdot\mathbf v(t_0)\right\rangle.
+\]</div>
+<p>其中 $t$ 是滞后时间，平均包含粒子与多个起点 $t_0$。三维各向同性扩散的 Green–Kubo 公式为</p>
+<div class="math-display">\[
+D=\frac{1}{3}\int_0^{\infty}C_v(t)\,\mathrm dt.
+\]</div>
+<p>实际数据长度有限，可以计算随积分上限变化的累计估计：</p>
+<div class="math-display">\[
+D(t_{\max})=\frac{1}{3}\int_0^{t_{\max}}C_v(t)\,\mathrm dt.
+\]</div>
+<p>建议先画 <code>vacf_normalized</code>，观察速度记忆衰减的时间范围；再用原始 <code>vacf</code> 列按梯形法积分，画出 $D(t_{\max})$ 随积分上限的变化，寻找相对平稳的一段，与同组 MSD 斜率除以 6 的结果比较。归一化曲线适合观察形状，计算扩散系数时要保留原始相关函数的幅度；这里的 $1/3$ 对应三维点积，不能遗漏。短上限会漏掉相关面积，过长上限则会累积尾部噪声，因此可比较几个上限，而不是只取最后一个值。</p>
 <h2>自愿拓展：查看或运行原始输入文件</h2>
 <p>每题文件夹附一个实际计算工况的 <code>input.lmp</code>，对应参数与运行方法见数据包的 <code>数据说明.md</code>。这些文件用于了解模型与采样过程，或自行修改一个控制变量；基础作业不要求运行它们。</p>
 <h2>提交说明</h2>

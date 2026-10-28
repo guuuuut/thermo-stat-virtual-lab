@@ -26,15 +26,25 @@ QUESTIONS = {
 
 def inline_markdown(text: str) -> str:
     """Render the deliberately small inline vocabulary used by our source sheet."""
-    text = html.escape(text)
-    text = re.sub(r'`([^`]+)`', r'<code>\1</code>', text)
-    return re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', text)
+    parts = re.split(r'(\$[^$\n]+\$|`[^`]+`)', text)
+    rendered = []
+    for part in parts:
+        escaped = html.escape(part)
+        if part.startswith('`') and part.endswith('`'):
+            rendered.append('<code>' + html.escape(part[1:-1]) + '</code>')
+        elif part.startswith('$') and part.endswith('$'):
+            rendered.append(escaped)
+        else:
+            rendered.append(re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', escaped))
+    return ''.join(rendered)
 
 
 def assignment_html(source: str) -> str:
     blocks: list[str] = []
     paragraph: list[str] = []
     in_list = False
+    in_math = False
+    math_lines: list[str] = []
 
     def flush() -> None:
         if paragraph:
@@ -43,7 +53,22 @@ def assignment_html(source: str) -> str:
 
     for line in source.splitlines():
         line = line.strip()
-        if not line:
+        if line == '$$':
+            flush()
+            if in_list:
+                blocks.append('</ul>')
+                in_list = False
+            if in_math:
+                if not math_lines:
+                    raise ValueError('Empty display equation in assignment.')
+                blocks.append('<div class="math-display">\\[\n' +
+                              html.escape('\n'.join(math_lines)) + '\n\\]</div>')
+                math_lines.clear()
+            in_math = not in_math
+        elif in_math:
+            if line:
+                math_lines.append(line)
+        elif not line:
             flush()
             if in_list:
                 blocks.append('</ul>')
@@ -66,6 +91,8 @@ def assignment_html(source: str) -> str:
             blocks.append('<li>' + inline_markdown(line[2:]) + '</li>')
         else:
             paragraph.append(line)
+    if in_math:
+        raise ValueError('Unclosed display equation in assignment.')
     flush()
     if in_list:
         blocks.append('</ul>')

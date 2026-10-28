@@ -19,9 +19,19 @@
     p { margin:10px 0; }
     li { margin:7px 0; }
     code { font-family:"Times New Roman","Microsoft YaHei",serif; overflow-wrap:anywhere; }
+    .math-display { overflow-x:auto; overflow-y:hidden; padding:5px 3px; margin:12px 0; }
+    .math-display mjx-container[display="true"] { margin:0.6em 0 !important; }
     a:focus-visible { outline:3px solid var(--accent); outline-offset:4px; }
     @media(max-width:680px) { main { margin:0; border:0; border-radius:0; padding:18px 17px 30px; } h1 { font-size:24px; } h2 { font-size:20px; } }
   </style>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'local' },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
 </head>
 <body>
   <main>
