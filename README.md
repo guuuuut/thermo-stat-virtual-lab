@@ -10,7 +10,7 @@
 - [五组压强的轨迹下载包](downloads/pressure_diffusion_trajectories.zip)：包含 0–100 t* 预览轨迹、0–500 t* 分析轨迹及对应的 MSD、热力学数据；文件说明见 [README_trajectories.md](downloads/README_trajectories.md)。
 - [实验与校验说明](docs/experiment_spec.md)、[压强扩散计算报告](reports/pressure_diffusion_report.md)。
 - [六选一数据分析小作业](visualization/homework.html)：任选一题，提交 1–2 张图与 200–400 字说明；包含温度与扩散、体系大小、速度自相关等选题。
-- [六选一学生数据包](downloads/homework_20261027.zip)：47 个服务器 GPU 算例整理出的轻量 CSV、题单和字段说明，约 2.2 MB；不含教师示例报告和答案图。
+- [六选一学生数据包](downloads/homework_20261027.zip)：47 个服务器 GPU 算例整理出的轻量 CSV、题单、字段说明及每题一个工况的原始 LAMMPS 输入文件，约 2.2 MB；不含教师示例报告和答案图。
 
 在仓库根目录运行本地静态服务器，再访问 http://127.0.0.1:8000/visualization/pressure_diffusion.html：
 
@@ -26,7 +26,7 @@
 
 脚本会依次完成：重建三维动画页面，部署学习指南，按白名单重建只含轨迹和基础输出的 ZIP，计算本地哈希，上传临时文件，备份线上版本，原子切换，核对服务器哈希，并从公网实际下载 ZIP 再次验证。部署时会撤下旧分析页和扩散系数汇总 CSV；任一步失败都会停止并自动恢复备份。
 
-同一命令还会根据 `docs/homework_20261027.md`、`visualization/homework_template.html`、`downloads/README_homework.md` 和 `results/homework_20261027/student_data/` 重建作业页及学生包，并一起备份、部署、校验和回滚。原有轨迹包仍保持 25 文件校验；新的六选一学生包单独校验 67 个文件及逐文件 SHA-256。
+同一命令还会根据 `docs/homework_20261027.md`、`visualization/homework_template.html`、`downloads/README_homework.md` 和 `results/homework_20261027/student_data/` 重建作业页及学生包，并一起备份、部署、校验和回滚。原有轨迹包仍保持 25 文件校验；网站主下载入口统一指向六选一作业包；原轨迹包保留旧链接兼容。六选一学生包单独校验 73 个文件及逐文件 SHA-256，并检查每题文件夹均有一个 `input.lmp`。
 
 日常更新请修改上述源文件，随后执行一键部署。`visualization/pressure_diffusion.html` 和 `visualization/homework.html` 是生成文件，不应直接修改。教师示例报告、答案图和完整分析代码保留在本地，不随本次学生网站更新提交到公开仓库。
 

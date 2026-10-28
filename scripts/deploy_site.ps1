@@ -258,7 +258,16 @@ try {
         }
     }
 
-    Write-Host '[2/7] Rebuilding student trajectory package...'
+    # All student-facing download buttons must use the current assignment package.
+    foreach ($studentPage in @($page, $learningPage, $homeworkPage)) {
+        $studentSource = [IO.File]::ReadAllText($studentPage, [Text.Encoding]::UTF8)
+        if (-not $studentSource.Contains('downloads/homework_20261027.zip') -or
+            $studentSource.Contains('downloads/pressure_diffusion_trajectories.zip')) {
+            throw "Student download link must target the six-choice assignment: $studentPage"
+        }
+    }
+
+    Write-Host '[2/7] Homework package validated (73 files, six original LAMMPS inputs); rebuilding legacy trajectory package...'
     Build-TrajectoryPackage
 
     $localHashes = @{
@@ -275,7 +284,7 @@ try {
         -Arguments ($sshArgs + @($serverTarget, "test ! -e $remoteBackup")) `
         -FailureMessage 'Remote backup path already exists or SSH failed'
 
-    Write-Host '[4/7] Uploading site pages, ZIP, and deployment script...'
+    Write-Host '[4/7] Uploading site pages, homework and legacy ZIPs, and deployment script...'
     foreach ($item in @(
         @($page, $remoteIndex),
         @($learningPage, $remoteLearningPage),
@@ -490,6 +499,12 @@ test ! -e "$retired_csv"
         if ([int]$homeworkResponse.StatusCode -ne 200 -or -not $homeworkResponse.Content.Contains($homeworkPageMarker)) {
             throw 'Public homework page did not return the expected content.'
         }
+        foreach ($response in @($pageResponse, $learningResponse, $homeworkResponse)) {
+            if (-not $response.Content.Contains('downloads/homework_20261027.zip') -or
+                $response.Content.Contains('downloads/pressure_diffusion_trajectories.zip')) {
+                throw 'Public student download link does not target the six-choice assignment.'
+            }
+        }
         Invoke-WebRequest `
             -UseBasicParsing `
             -Uri "$publicBase/downloads/homework_20261027.zip" `
@@ -510,6 +525,7 @@ test ! -e "$retired_csv"
     Write-Host "Learning: $publicBase/learning.html"
     Write-Host "Homework: $publicBase/homework.html"
     Write-Host "ZIP SHA-256: $(Get-Sha256 $archive)"
+    Write-Host "Student download: $publicBase/downloads/homework_20261027.zip"
     Write-Host "Homework ZIP SHA-256: $(Get-Sha256 $homeworkArchive)"
     Write-Host "Remote backup: $remoteBackup"
 }

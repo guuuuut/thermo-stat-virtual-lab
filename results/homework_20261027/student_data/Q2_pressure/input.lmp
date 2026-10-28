@@ -1,0 +1,45 @@
+# LJ teaching experiment. All values are in reduced LJ units.
+clear
+units lj
+dimension 3
+boundary p p p
+atom_style atomic
+lattice fcc 0.15
+region box block 0 8 0 8 0 8 units lattice
+create_box 1 box
+create_atoms 1 box
+mass 1 1.0
+pair_style lj/cut 2.5
+pair_coeff 1 1 1.0 1.0 2.5
+pair_modify shift yes
+neighbor 0.3 bin
+neigh_modify delay 0 every 1 check yes
+timestep 0.005
+velocity all create 2.0 714009 mom yes rot no dist gaussian
+thermo 1000
+thermo_style custom step atoms temp press density vol pe ke etotal
+thermo_modify norm no flush yes
+fix preparation all npt temp 2.0 2.0 0.5 iso 0.3 0.3 5.0 drag 1.0
+run 30000
+unfix preparation
+fix settling all nvt temp 2.0 2.0 1.0
+run 10000
+unfix settling
+reset_timestep 0
+fix production all nvt temp 2.0 2.0 1.0
+compute displacement all msd com yes
+variable out_step equal step
+variable out_time equal time
+variable out_temp equal temp
+variable out_press equal press
+variable out_rho equal density
+variable out_vol equal vol
+variable out_msd equal c_displacement[4]
+variable out_pe equal pe/atoms
+variable out_ke equal ke/atoms
+variable out_e equal etotal/atoms
+fix thermo_output all print 100 "${out_step},${out_time},${out_temp},${out_press},${out_rho},${out_vol},${out_pe},${out_ke},${out_e}" file thermo.csv screen no title "step,time,temp,pressure,density,volume,pe_per_atom,ke_per_atom,etotal_per_atom"
+fix msd_output all print 100 "${out_step},${out_time},${out_msd}" file msd.csv screen no title "step,time,msd"
+run 100000
+write_data final.data
+write_restart final.restart

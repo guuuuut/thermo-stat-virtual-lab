@@ -17,7 +17,7 @@ PAGE = PROJECT_ROOT / 'visualization/homework.html'
 ARCHIVE = PROJECT_ROOT / 'downloads/homework_20261027.zip'
 ARCHIVE_ROOT = '六选一作业数据/'
 PAGE_MARKER = '<meta name="visual-lab-page" content="homework-six-choice-v1">'
-EXPECTED_FILES = 67
+EXPECTED_FILES = 73
 QUESTIONS = {
     'Q1_speed_distribution', 'Q2_pressure', 'Q3_boundaries',
     'Q4_temperature_diffusion', 'Q5_system_size', 'Q6_velocity_correlation',
@@ -79,11 +79,17 @@ def student_files() -> dict[str, bytes]:
             continue
         rel = path.relative_to(DATA_SOURCE)
         if rel.as_posix() != 'dataset_metadata.json':
-            if rel.parts[0] not in QUESTIONS or path.suffix not in {'.csv', '.json'}:
+            if rel.parts[0] not in QUESTIONS or not (
+                path.suffix in {'.csv', '.json'} or
+                (len(rel.parts) == 2 and rel.name == 'input.lmp')
+            ):
                 raise ValueError(f'Unexpected student source: {rel}')
         files[rel.as_posix()] = path.read_bytes()
     if {name.split('/')[0] for name in files if '/' in name} != QUESTIONS:
         raise ValueError('The student sources must cover all six questions.')
+    for question in QUESTIONS:
+        if not files.get(question + '/input.lmp'):
+            raise ValueError(f'Missing original LAMMPS example: {question}')
     metadata = json.loads(files['dataset_metadata.json'])
     if metadata['source_cases'] != 47 or metadata['questions'] != 6:
         raise ValueError('Unexpected dataset metadata.')
@@ -106,8 +112,13 @@ def verify_archive(path: Path) -> None:
         for name in names:
             if not name.startswith(ARCHIVE_ROOT) or '..' in Path(name).parts or '\\' in name:
                 raise ValueError(f'Unsafe archive member: {name}')
-            if Path(name).suffix not in {'.csv', '.json', '.md', '.txt'}:
+            relative = name.removeprefix(ARCHIVE_ROOT)
+            is_example = relative in {q + '/input.lmp' for q in QUESTIONS}
+            if Path(name).suffix not in {'.csv', '.json', '.md', '.txt'} and not is_example:
                 raise ValueError(f'Non-student material in archive: {name}')
+        for question in QUESTIONS:
+            if ARCHIVE_ROOT + question + '/input.lmp' not in names:
+                raise ValueError(f'Missing archived LAMMPS example: {question}')
         checks = archive.read(ARCHIVE_ROOT + 'SHA256SUMS.txt').decode('utf-8').splitlines()
         if len(checks) != EXPECTED_FILES - 1:
             raise ValueError('The archive hash manifest is incomplete.')
