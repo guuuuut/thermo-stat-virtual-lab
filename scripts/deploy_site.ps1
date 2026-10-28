@@ -28,7 +28,6 @@ $homeworkArchive = Join-Path $projectRoot 'downloads\homework_20261027.zip'
 $mainPageMarker = '<meta name="visual-lab-page" content="pressure-diffusion-v1">'
 $learningPageMarker = '<meta name="visual-lab-page" content="learning-guide-v1">'
 $homeworkPageMarker = '<meta name="visual-lab-page" content="homework-six-choice-v1">'
-$packageReadmeMarker = '<!-- visual-lab-package: pressure-diffusion-v1 -->'
 $archive = Join-Path $projectRoot 'downloads\pressure_diffusion_trajectories.zip'
 
 if (-not $KeyPath) {
@@ -63,13 +62,10 @@ $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
 
 New-Item -ItemType Directory -Force -Path $cacheRoot | Out-Null
 $tempRoot = Join-Path $cacheRoot "deploy-$stamp-$PID"
-$packageRoot = Join-Path $tempRoot 'package'
-$verifyRoot = Join-Path $tempRoot 'verify'
-$newArchive = Join-Path $tempRoot 'pressure_diffusion_trajectories.zip'
 $remoteScriptLocal = Join-Path $tempRoot 'deploy-site.sh'
 $publicArchive = Join-Path $tempRoot 'public-archive.zip'
 $publicHomeworkArchive = Join-Path $tempRoot 'public-homework.zip'
-New-Item -ItemType Directory -Path $tempRoot, $packageRoot | Out-Null
+New-Item -ItemType Directory -Path $tempRoot | Out-Null
 
 $remoteIndex = "/tmp/visual-lab-$stamp-index.html"
 $remoteLearningPage = "/tmp/visual-lab-$stamp-learning.html"
@@ -101,95 +97,6 @@ function Invoke-NativeChecked {
 function Get-Sha256 {
     param([Parameter(Mandatory)][string]$Path)
     return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
-}
-
-function Copy-RequiredFile {
-    param(
-        [Parameter(Mandatory)][string]$Source,
-        [Parameter(Mandatory)][string]$Destination
-    )
-    if (-not (Test-Path -LiteralPath $Source -PathType Leaf)) {
-        throw "Package source not found: $Source"
-    }
-    Copy-Item -LiteralPath $Source -Destination $Destination
-}
-
-function Build-TrajectoryPackage {
-    $utf8 = New-Object System.Text.UTF8Encoding($false)
-    Copy-RequiredFile `
-        (Join-Path $projectRoot 'downloads\README_trajectories.md') `
-        (Join-Path $packageRoot 'README.md')
-
-    $lammpsRoot = Join-Path $packageRoot 'lammps'
-    $previewRoot = Join-Path $packageRoot 'preview'
-    $analysisRoot = Join-Path $packageRoot 'analysis'
-    New-Item -ItemType Directory -Path $lammpsRoot, $previewRoot, $analysisRoot | Out-Null
-
-    foreach ($name in @(
-        'in.lj_diffusion_pressure',
-        'in.lj_diffusion_pressure_reflective_preview'
-    )) {
-        Copy-RequiredFile `
-            (Join-Path $projectRoot "lammps\$name") `
-            (Join-Path $lammpsRoot $name)
-    }
-
-    Copy-RequiredFile `
-        (Join-Path $projectRoot 'results\diffusion_pressure_preview\run_manifest.json') `
-        (Join-Path $previewRoot 'run_manifest.json')
-
-    foreach ($name in @('run_manifest.json')) {
-        Copy-RequiredFile `
-            (Join-Path $projectRoot "results\diffusion_pressure\$name") `
-            (Join-Path $analysisRoot $name)
-    }
-
-    foreach ($suffix in @('0p10', '0p20', '0p30', '0p40', '0p50')) {
-        $case = "p_$suffix"
-        $previewCase = Join-Path $previewRoot $case
-        $analysisCase = Join-Path $analysisRoot $case
-        New-Item -ItemType Directory -Path $previewCase, $analysisCase | Out-Null
-
-        Copy-RequiredFile `
-            (Join-Path $projectRoot "results\diffusion_pressure_preview\$case\trajectory.lammpstrj") `
-            (Join-Path $previewCase 'trajectory.lammpstrj')
-
-        foreach ($name in @('trajectory.lammpstrj', 'msd.csv', 'thermo.csv')) {
-            Copy-RequiredFile `
-                (Join-Path $projectRoot "results\diffusion_pressure\$case\$name") `
-                (Join-Path $analysisCase $name)
-        }
-    }
-
-    # Normalize archive timestamps so identical data produces an identical ZIP.
-    $fixedPackageTime = [datetime]::SpecifyKind(
-        [datetime]'2026-01-01T00:00:00',
-        [DateTimeKind]::Utc
-    )
-    foreach ($entry in @(Get-ChildItem -LiteralPath $packageRoot -Recurse -Force)) {
-        $entry.LastWriteTimeUtc = $fixedPackageTime
-    }
-    (Get-Item -LiteralPath $packageRoot).LastWriteTimeUtc = $fixedPackageTime
-
-    Compress-Archive -Path (Join-Path $packageRoot '*') -DestinationPath $newArchive -CompressionLevel Optimal
-    Expand-Archive -LiteralPath $newArchive -DestinationPath $verifyRoot
-
-    $packageFiles = Get-ChildItem -LiteralPath $verifyRoot -Recurse -File
-    if ($packageFiles.Count -ne 25) {
-        throw "Trajectory package must contain 25 files; found $($packageFiles.Count)."
-    }
-    $readme = [IO.File]::ReadAllText((Join-Path $verifyRoot 'README.md'), $utf8)
-    if (-not $readme.Contains($packageReadmeMarker)) {
-        throw "The packaged README is missing its stable marker: $packageReadmeMarker"
-    }
-    $packagedCode = @(
-        Get-ChildItem -LiteralPath $verifyRoot -Recurse -File -Filter '*.py'
-    )
-    if ($packagedCode.Count -ne 0) {
-        throw 'Trajectory package must not contain complete Python source files.'
-    }
-
-    Copy-Item -LiteralPath $newArchive -Destination $archive -Force
 }
 
 function Get-RemoteHashes {
@@ -267,8 +174,12 @@ try {
         }
     }
 
-    Write-Host '[2/7] Homework package validated (73 files, six original LAMMPS inputs); rebuilding legacy trajectory package...'
-    Build-TrajectoryPackage
+    Write-Host '[2/7] Publishing the same homework package at current and legacy download URLs...'
+    # Cached pages and previously shared links must also download the current assignment.
+    Copy-Item -LiteralPath $homeworkArchive -Destination $archive -Force
+    if ((Get-Sha256 $archive) -ne (Get-Sha256 $homeworkArchive)) {
+        throw 'Legacy download alias must match the current homework package.'
+    }
 
     $localHashes = @{
         $remoteIndex = Get-Sha256 $page
@@ -284,7 +195,7 @@ try {
         -Arguments ($sshArgs + @($serverTarget, "test ! -e $remoteBackup")) `
         -FailureMessage 'Remote backup path already exists or SSH failed'
 
-    Write-Host '[4/7] Uploading site pages, homework and legacy ZIPs, and deployment script...'
+    Write-Host '[4/7] Uploading site pages, homework ZIP and legacy download alias, and deployment script...'
     foreach ($item in @(
         @($page, $remoteIndex),
         @($learningPage, $remoteLearningPage),
@@ -492,8 +403,8 @@ test ! -e "$retired_csv"
             -Uri "$publicBase/downloads/pressure_diffusion_trajectories.zip" `
             -OutFile $publicArchive `
             -TimeoutSec 180
-        if ((Get-Sha256 $publicArchive) -ne (Get-Sha256 $archive)) {
-            throw 'Public trajectory ZIP SHA-256 mismatch.'
+        if ((Get-Sha256 $publicArchive) -ne (Get-Sha256 $homeworkArchive)) {
+            throw 'Public legacy download must serve the current homework ZIP.'
         }
         $homeworkResponse = Invoke-WebRequest -UseBasicParsing -Uri "$publicBase/homework.html" -TimeoutSec 45
         if ([int]$homeworkResponse.StatusCode -ne 200 -or -not $homeworkResponse.Content.Contains($homeworkPageMarker)) {
